@@ -41,6 +41,7 @@ interface StoreActions {
   addGoal: (g: Omit<Goal, 'id' | 'criadaEm' | 'valorAtual'>) => void;
   updateGoal: (id: string, valorAtual: number) => void;
   deleteGoal: (id: string) => void;
+  reorderGoals: (goals: Goal[]) => void;
   addInvestment: (investment: Omit<Investment, 'id' | 'criadoEm'>) => void;
   updateInvestment: (id: string, investment: Partial<Investment>) => void;
   deleteInvestment: (id: string) => void;
@@ -144,24 +145,36 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   addGoal: (g) => {
-    const goal: Goal = { ...g, id: uid(), criadaEm: new Date().toISOString(), valorAtual: 0 };
+    const goalId = uid();
+    const investmentId = uid();
+    const goal: Goal = { ...g, id: goalId, investimentoId: investmentId, criadaEm: new Date().toISOString(), valorAtual: 0 };
+    const investment: Investment = { id: investmentId, nome: goal.titulo, valor: 0, criadoEm: goal.criadaEm, tipo: 'reserva', considerarDisponivel: false, metaId: goalId, icone: goal.icone };
     set((s) => {
       const xp = s.xp + 30;
-      return { goals: [...s.goals, goal], xp, onboarding: updateProfileFromExperience(s.onboarding, xp) };
+      return { goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)), investments: [...s.investments, investment], xp, onboarding: updateProfileFromExperience(s.onboarding, xp) };
     });
     get()._ensureMonthlyChallenges();
     get()._persist();
   },
 
   updateGoal: (id, valorAtual) => {
-    set((s) => ({
-      goals: s.goals.map((g) => (g.id === id ? { ...g, valorAtual } : g)),
-    }));
+    set((s) => {
+      const goal = s.goals.find((item) => item.id === id);
+      return {
+        goals: s.goals.map((g) => (g.id === id ? { ...g, valorAtual } : g)),
+        investments: goal?.investimentoId ? s.investments.map((item) => item.id === goal.investimentoId ? { ...item, valor: valorAtual } : item) : s.investments,
+      };
+    });
     get()._persist();
   },
 
   deleteGoal: (id) => {
-    set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
+    set((s) => ({ goals: s.goals.filter((g) => g.id !== id), investments: s.investments.filter((item) => item.metaId !== id) }));
+    get()._persist();
+  },
+
+  reorderGoals: (goals) => {
+    set({ goals });
     get()._persist();
   },
 
@@ -172,12 +185,21 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   updateInvestment: (id, investment) => {
-    set((s) => ({ investments: s.investments.map((item) => item.id === id ? { ...item, ...investment } : item) }));
+    set((s) => {
+      const current = s.investments.find((item) => item.id === id);
+      return {
+        investments: s.investments.map((item) => item.id === id ? { ...item, ...investment } : item),
+        goals: current?.metaId && typeof investment.valor === 'number' ? s.goals.map((goal) => goal.id === current.metaId ? { ...goal, valorAtual: investment.valor as number } : goal) : s.goals,
+      };
+    });
     get()._persist();
   },
 
   deleteInvestment: (id) => {
-    set((s) => ({ investments: s.investments.filter((item) => item.id !== id) }));
+    set((s) => {
+      const current = s.investments.find((item) => item.id === id);
+      return { investments: s.investments.filter((item) => item.id !== id), goals: current?.metaId ? s.goals.filter((goal) => goal.id !== current.metaId) : s.goals };
+    });
     get()._persist();
   },
 

@@ -74,7 +74,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Aprender', path: '/aprender', icon: 'GraduationCap' },
       { label: 'Perfil', path: '/perfil', icon: 'User' },
     ],
@@ -100,7 +100,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Orçamento', path: '/orcamentos', icon: 'SlidersHorizontal' },
       { label: 'Análise', path: '/analises', icon: 'BarChart3' },
       { label: 'Perfil', path: '/perfil', icon: 'User' },
@@ -127,7 +127,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Orçamento', path: '/orcamentos', icon: 'SlidersHorizontal' },
       { label: 'Análise', path: '/analises', icon: 'BarChart3' },
       { label: 'Carteira', path: '/investimentos', icon: 'WalletCards' },
@@ -155,7 +155,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Orçamento', path: '/orcamentos', icon: 'SlidersHorizontal' },
       { label: 'Análise', path: '/analises', icon: 'BarChart3' },
       { label: 'Carteira', path: '/investimentos', icon: 'WalletCards' },

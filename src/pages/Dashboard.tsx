@@ -46,15 +46,16 @@ export function Dashboard() {
     transactions, goals, budgets, xp,
     cardOrder, disabledCards,
     onboarding, toggleCard, reorderCards,
-    plannedExpenses, creditCards, creditCardExpenses, lessonProgress,
+    plannedExpenses, creditCards, creditCardExpenses, lessonProgress, investments,
   } = useStore();
 
   const profile = onboarding.profile as ProfileType;
   const profileConfig = PROFILES[profile];
 
   const saldoTransacoes = getSaldo(transactions);
-  // O saldo é calculado exclusivamente pelas entradas e saídas do extrato.
-  const saldoTotal = saldoTransacoes;
+  const saldoCarteirasDisponivel = investments.filter((item) => item.considerarDisponivel).reduce((sum, item) => sum + item.valor, 0);
+  // Quando há carteiras, o saldo principal mostra apenas valores liberados para uso.
+  const saldoTotal = investments.length > 0 ? saldoCarteirasDisponivel : saldoTransacoes;
 
   const receitas = getReceitasMes(transactions);
   const despesas = getDespesasMes(transactions);
@@ -180,6 +181,11 @@ export function Dashboard() {
           );
         })}
       </div>
+
+      <section className="mt-4 bg-white rounded-2xl shadow-card p-4">
+        <div className="flex items-center gap-2 mb-3"><Icons.Lightbulb className="w-5 h-5 text-amber-500" /><h2 className="font-bold text-ink-900">Sugestões para você</h2></div>
+        <div className="space-y-2">{sugestoes.slice(0, 3).map((suggestion, index) => <div key={index} className={`rounded-xl p-3 text-sm ${suggestion.tipo === 'alerta' ? 'bg-amber-50 text-amber-800' : suggestion.tipo === 'positivo' ? 'bg-primary-50 text-primary-800' : 'bg-ink-50 text-ink-700'}`}>{suggestion.texto}</div>)}</div>
+      </section>
 
       {/* Comparação mensal for equilibrado+ */}
       {false && profileConfig.features.comparacaoMensal && (

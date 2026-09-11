@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, ArrowLeft, Lightbulb } from 'lucide-react';
+import { X, Check, ArrowLeft } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { CATEGORIES, DESPESA_CATEGORIES, RECEITA_CATEGORIES } from '@/data/categories';
 import type { CategoryId, TransactionType } from '@/types';
 import * as Icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { getTransactionInsight, type TransactionInsight } from '@/lib/evolution';
 
 interface QuickAddModalProps {
   open: boolean;
@@ -16,24 +15,29 @@ interface QuickAddModalProps {
 
 export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
   const addTransaction = useStore((s) => s.addTransaction);
-  const profile = useStore((s) => s.onboarding.profile);
   const transactions = useStore((s) => s.transactions);
-  const budgets = useStore((s) => s.budgets);
-  const goals = useStore((s) => s.goals);
-  const [step, setStep] = useState<'tipo' | 'categoria' | 'valor' | 'confirm'>('tipo');
-  const [tipo, setTipo] = useState<TransactionType>('despesa');
+  const defaultType: TransactionType = transactions.some((item) => item.tipo === 'receita') ? 'despesa' : 'receita';
+  const [step, setStep] = useState<'tipo' | 'categoria' | 'valor' | 'confirm'>('valor');
+  const [tipo, setTipo] = useState<TransactionType>(defaultType);
   const [categoria, setCategoria] = useState<CategoryId | null>(null);
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [insight, setInsight] = useState<TransactionInsight | null>(null);
 
-  function reset() {
-    setStep('tipo');
-    setTipo('despesa');
+  useEffect(() => {
+    if (!open) return;
+    setStep('valor');
+    setTipo(defaultType);
     setCategoria(null);
     setValor('');
     setDescricao('');
-    setInsight(null);
+  }, [open]);
+
+  function reset() {
+    setStep('valor');
+    setTipo(defaultType);
+    setCategoria(null);
+    setValor('');
+    setDescricao('');
   }
 
   function handleClose() {
@@ -51,8 +55,8 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
       descricao: descricao || undefined,
     };
     addTransaction(transaction);
-    if (profile) setInsight(getTransactionInsight(transaction, { transactions, budgets, goals }, profile));
-    else handleClose();
+    reset();
+    onClose();
   }
 
   const cats = tipo === 'receita' ? RECEITA_CATEGORIES : DESPESA_CATEGORIES;
@@ -70,12 +74,13 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
             onClick={handleClose}
             className="fixed inset-0 bg-black/40 z-50"
           />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed inset-x-4 top-1/2 z-50 -translate-y-1/2 bg-white rounded-3xl max-w-md mx-auto max-h-[82vh] overflow-y-auto safe-bottom"
+            className="w-full max-w-md max-h-[82vh] overflow-y-auto bg-white rounded-3xl safe-bottom pointer-events-auto"
           >
             <div className="flex items-center justify-between p-4 border-b border-ink-100">
               <div className="flex items-center gap-3">
@@ -145,7 +150,7 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
 
                 {step === 'valor' && (
                   <motion.div key="valor" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                    <p className="text-sm text-ink-500 mb-3">Qual o valor?</p>
+                    <div className="flex items-center justify-between mb-3"><p className="text-sm text-ink-500">Novo lançamento</p><div className="flex items-center rounded-xl bg-ink-100 p-1"><button type="button" onClick={() => { setTipo('receita'); setCategoria(null); }} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tipo === 'receita' ? 'bg-primary-600 text-white shadow-sm' : 'text-ink-500'}`}>Entrada</button><button type="button" onClick={() => { setTipo('despesa'); setCategoria(null); }} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tipo === 'despesa' ? 'bg-danger text-white shadow-sm' : 'text-ink-500'}`}>Despesa</button></div></div>
                     <div className="text-center mb-4">
                       <div className="text-3xl font-bold text-ink-900 mb-1">
                         {valor ? formatCurrency(parseFloat(valor.replace(',', '.')) || 0) : 'R$ 0,00'}
@@ -161,6 +166,7 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
                       placeholder="0,00"
                       className="input text-center text-lg font-semibold mb-3"
                     />
+                    <p className="text-xs font-semibold text-ink-600 mb-2">Categorias mais usadas</p><div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar">{[...recentCategories, ...cats.filter((item) => !recentCategories.includes(item))].slice(0, 5).map((catId) => <button key={catId} type="button" onClick={() => setCategoria(catId)} className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold ${categoria === catId ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`}>{CATEGORIES[catId].nome}</button>)}</div>
                     <input
                       type="text"
                       value={descricao}
@@ -171,7 +177,7 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
                     />
                     {recentDescriptions.length > 0 && <div className="flex gap-2 overflow-x-auto -mt-2 mb-4 no-scrollbar">{recentDescriptions.map((item) => <button key={item} type="button" onClick={() => setDescricao(item)} className="shrink-0 px-2.5 py-1.5 rounded-lg bg-ink-100 text-xs text-ink-600">{item}</button>)}</div>}
                     <button
-                      disabled={!valor}
+                      disabled={!valor || !categoria}
                       onClick={() => setStep('confirm')}
                       className="btn-primary w-full"
                     >
@@ -180,7 +186,7 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
                   </motion.div>
                 )}
 
-                {insight ? <motion.div key="insight" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="text-center py-3"><div className={`w-12 h-12 mx-auto rounded-2xl flex items-center justify-center ${insight.tone === 'attention' ? 'bg-amber-100 text-amber-600' : 'bg-primary-100 text-primary-600'}`}><Lightbulb className="w-6 h-6" /></div><h3 className="font-bold text-ink-900 mt-4">{insight.title}</h3><p className="text-sm text-ink-600 leading-relaxed mt-2">{insight.message}</p><button onClick={handleClose} className="btn-primary w-full mt-5">Entendi</button></motion.div> : step === 'confirm' && categoria && (
+                {step === 'confirm' && categoria && (
                   <motion.div key="confirm" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                     <p className="text-sm text-ink-500 mb-3">Confirmar transação</p>
                     <div className="space-y-3 mb-4">
@@ -211,6 +217,7 @@ export function QuickAddModal({ open, onClose }: QuickAddModalProps) {
               </AnimatePresence>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

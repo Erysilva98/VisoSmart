@@ -76,8 +76,13 @@ export interface Goal {
   titulo: string;
   valorAlvo: number;
   valorAtual: number;
+  /** Ícone escolhido para representar visualmente o objetivo. */
+  icone?: string;
+  /** Item correspondente criado na Carteira para receber os aportes. */
+  investimentoId?: string;
   categoria?: CategoryId;
   prazo?: string;
+  meses?: number;
   criadaEm: string;
 }
 
@@ -89,6 +94,9 @@ export interface Investment {
   criadoEm: string;
   tipo?: 'disponivel' | 'reserva' | 'investimento';
   considerarDisponivel?: boolean;
+  /** Meta associada: permanece protegida e fora do saldo disponível. */
+  metaId?: string;
+  icone?: string;
 }
 
 export interface Challenge {
