@@ -15,7 +15,7 @@ import type { CategoryId } from '@/types';
 
 export function Profile() {
   const {
-    onboarding, xp, challenges, goals, transactions, budgets, accounts, assets, lessonProgress,
+    onboarding, xp, challenges, goals, transactions, budgets, lessonProgress,
     completeChallenge, resetApp,
   } = useStore();
 
@@ -94,7 +94,7 @@ export function Profile() {
         </div>
         <div className="space-y-2">
           {monthChallenges.map((c) => {
-            const state = { transactions, goals, accounts, assets, budgets, lessonProgress };
+            const state = { transactions, goals, budgets, lessonProgress };
             const eligible = canCompleteChallenge(c, state);
             const progress = getChallengeProgress(c, state);
             return (

@@ -1,28 +1,19 @@
-# Aprendizado, desafios e progressão
+# Aprendizado, XP e desafios
 
-## Learning Engine
+## Trilha
 
-As aulas são definidas em `src/data/lessons.ts`. A trilha exibida contém **30 aulas para cada perfil**, agrupadas em três módulos e distribuídas em níveis. Cada aula contém título, descrição, duração, XP, perfil, módulo, nível, conteúdo e `desafioPratico`.
+Cada perfil possui 30 aulas, organizadas em três módulos. A aula apresenta conteúdo, duração, XP e uma missão prática. A conclusão só é liberada quando a regra correspondente for atendida no aplicativo.
 
-`desafioPratico` define tipo, texto da missão, validação e rota. `src/lib/progress.ts` valida a missão com dados reais do app: transações, categorias, metas, orçamento, contas, ativos e investimentos. A conclusão não é liberada apenas por clique.
+As missões usam apenas telas ativas: Extrato, Orçamento, Metas e Análise. Não existem missões que direcionem para Contas ou Patrimônio.
 
-`Learn.tsx` exibe módulo e nível, abre o conteúdo em modal e direciona para a rota necessária quando a atividade ainda não foi concluída.
+## XP e níveis
 
-## XP e promoção
-
-- Cada perfil possui níveis de 1 a 100.
+- Registrar uma transação: 5 XP.
+- Criar uma meta: 30 XP.
+- Concluir aula ou desafio: XP definido pelo item.
 - Cada nível exige 100 XP.
-- O indicador mostra o XP do nível atual, por exemplo `35/100 XP`.
-- Ao completar 100 XP, o usuário avança um nível e o contador retorna a zero.
-- Ao concluir o nível 100, o perfil avança para a classificação seguinte e suas funcionalidades/menu são atualizados.
-- O Mestre Financeiro é a classificação final.
+- Ao completar o nível 100, a pessoa evolui para o perfil seguinte; Mestre é o perfil final.
 
-O cálculo está em `getLevel` (`src/lib/analytics.ts`) e a mudança de perfil em `getProfileFromExperience` (`src/data/profiles.ts`).
+## Desafios mensais
 
-## Challenge Engine
-
-`src/data/challenges.ts` contém uma biblioteca por perfil e dificuldade. A geração mensal seleciona **quatro** desafios compatíveis com perfil e nível: níveis 1–25, 26–50, 51–75 e 76–100 possuem faixas de XP crescentes.
-
-Cada desafio registra categoria, nível mínimo e chave de validação. O histórico `challengeHistory` é persistido no estado e bloqueia a seleção da mesma tarefa por seis meses. Quando não há desafios do perfil para o mês atual, `_ensureMonthlyChallenges` cria o novo conjunto.
-
-Os desafios mensais não incluem o antigo desafio de teste de promoção; o ciclo mensal sempre contém quatro itens.
+O motor seleciona quatro desafios conforme perfil e nível. A seleção consulta `challengeHistory` e evita repetir a mesma tarefa durante seis meses. As validações usam dados reais: número de transações, categorias utilizadas, metas, orçamentos e progresso de aulas.

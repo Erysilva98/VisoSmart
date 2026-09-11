@@ -24,7 +24,7 @@ import { getMonthlyForecast } from '@/lib/forecast';
 import { getLessonsForProfile } from '@/data/lessons';
 import * as Icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ProfileType, Account, Asset, CategoryId } from '@/types';
+import type { ProfileType, CategoryId } from '@/types';
 
 const CARD_META: Record<string, { title: string; icon: string }> = {
   saldo: { title: 'Saldo Total', icon: 'Wallet' },
@@ -46,19 +46,15 @@ export function Dashboard() {
     transactions, goals, budgets, xp,
     cardOrder, disabledCards,
     onboarding, toggleCard, reorderCards,
-    accounts, assets, plannedExpenses, creditCards, creditCardExpenses, lessonProgress,
+    plannedExpenses, creditCards, creditCardExpenses, lessonProgress,
   } = useStore();
 
   const profile = onboarding.profile as ProfileType;
   const profileConfig = PROFILES[profile];
 
   const saldoTransacoes = getSaldo(transactions);
-  const saldoContas = accounts.reduce((a, acc) => a + acc.saldo, 0);
-  const totalInvestimentos = assets
-    .filter((a) => a.tipo === 'investimento')
-    .reduce((a, acc) => a + acc.valor, 0);
-  // Contas representam o saldo inicial informado; lançamentos atualizam o saldo exibido.
-  const saldoTotal = saldoContas + totalInvestimentos + saldoTransacoes;
+  // O saldo é calculado exclusivamente pelas entradas e saídas do extrato.
+  const saldoTotal = saldoTransacoes;
 
   const receitas = getReceitasMes(transactions);
   const despesas = getDespesasMes(transactions);
@@ -146,8 +142,6 @@ export function Dashboard() {
               {cardId === 'saldo' && (
                 <SaldoTotalCard
                   saldo={saldoTotal}
-                  accounts={accounts}
-                  investments={assets.filter((a) => a.tipo === 'investimento')}
                   icon={Icon}
                 />
               )}
@@ -283,40 +277,11 @@ function CardShell({ icon: Icon, title, editing, onToggle, onMoveUp, onMoveDown,
   );
 }
 
-function SaldoTotalCard({ saldo, accounts, investments, icon: Icon }: { saldo: number; accounts: Account[]; investments: Asset[]; icon: LucideIcon }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const detailRef = useRef<HTMLDivElement>(null);
-  const items = [
-    ...accounts.map((account) => ({
-      id: account.id,
-      nome: account.nome,
-      tipo: account.tipo === 'cartao' ? 'Cartão' : 'Conta',
-      valor: account.saldo,
-      cor: account.cor,
-      icon: account.tipo === 'cartao' ? Icons.CreditCard : Icons.Landmark,
-    })),
-    ...investments.map((investment) => ({
-      id: investment.id,
-      nome: investment.nome,
-      tipo: 'Investimento',
-      valor: investment.valor,
-      cor: '#16a34a',
-      icon: Icons.TrendingUp,
-    })),
-  ];
-  const hasItems = items.length > 0;
+function SaldoTotalCard({ saldo, icon: Icon }: { saldo: number; icon: LucideIcon }) {
   const formattedSaldo = formatCurrency(saldo);
   const saldoFontSize = formattedSaldo.length > 15 ? 'text-lg' : formattedSaldo.length > 12 ? 'text-xl' : formattedSaldo.length > 10 ? 'text-2xl' : 'text-3xl';
-  useEffect(() => {
-    if (!isExpanded) return;
-    const closeWhenClickingOutside = (event: PointerEvent) => {
-      if (detailRef.current && !detailRef.current.contains(event.target as Node)) setIsExpanded(false);
-    };
-    document.addEventListener('pointerdown', closeWhenClickingOutside);
-    return () => document.removeEventListener('pointerdown', closeWhenClickingOutside);
-  }, [isExpanded]);
   return (
-    <div onClick={() => { if (!isExpanded) setIsExpanded(true); }} className="cursor-pointer">
+    <div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -334,30 +299,6 @@ function SaldoTotalCard({ saldo, accounts, investments, icon: Icon }: { saldo: n
       >
         <span className="mr-1 align-[0.12em] text-[0.62em]">R$</span>{formattedSaldo.replace('R$', '').trim()}
       </motion.div>
-      <AnimatePresence initial={false}>
-        {isExpanded && hasItems && (
-          <motion.div ref={detailRef} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="absolute left-0 top-full z-50 mt-2 w-full min-[360px]:w-[222.222%] p-4 bg-white rounded-2xl shadow-card">
-            <div className="space-y-2">
-              <p className="text-[10px] font-semibold tracking-wide text-ink-400">DETALHAMENTO</p>
-              {items.map((item) => {
-                const ItemIcon = item.icon;
-                return (
-                  <div key={item.id} className="flex items-center gap-3 p-2.5 bg-ink-50 rounded-xl">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: item.cor + '20' }}>
-                      <ItemIcon className="w-4 h-4" style={{ color: item.cor }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink-900 truncate">{item.nome}</p>
-                      <p className="text-[10px] text-ink-400">{item.tipo}</p>
-                    </div>
-                    <span className="text-sm font-bold text-ink-900">{formatCurrency(item.valor)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

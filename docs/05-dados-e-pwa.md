@@ -1,39 +1,19 @@
-# Dados, PWA e publicação
+# Dados locais e PWA
 
-## Modelo persistido
+## Persistência
 
-`AppState` em `src/types/index.ts` guarda:
+`AppState` contém onboarding, transações, metas, orçamentos, previsões, cartões de crédito, desafios, aulas concluídas, XP e preferências de cards. Os dados são gravados em IndexedDB na base `finedu-wallet`, store `appstate`, chave `main`.
 
-- onboarding e perfil inicial/atual;
-- transações, metas, contas, ativos e transferências;
-- orçamentos;
-- progresso de aulas;
-- desafios mensais e `challengeHistory`;
-- XP, ordem e visibilidade dos cards.
+O app solicita persistência de armazenamento ao navegador. Isso reduz o risco de remoção automática dos dados, mas o usuário ainda pode apagar os dados do aplicativo pelo sistema operacional ou navegador.
 
-Os dados permanecem somente no navegador. A opção Recomeçar apaga toda a chave de estado no IndexedDB.
+## Uso offline
 
-## PWA
+O Workbox pré-armazena HTML, JavaScript, CSS, imagens e fontes produzidos na build. Após a primeira carga com conexão, o PWA abre offline e usa o estado salvo no dispositivo. Não depende de API, servidor ou sincronização externa.
 
-A configuração está em `vite.config.ts`:
-
-- `VitePWA` gera `dist/manifest.json`;
-- display standalone, idioma `pt-BR`, ícone `icon-wallet.png` e shortcut de painel;
-- Service Worker Workbox pré-armazena HTML, JS, CSS, SVG, PNG, ICO e fontes;
-- `navigateFallback: 'index.html'` permite abrir telas SPA offline após o cache inicial.
-
-## GitHub Pages
-
-O workflow `.github/workflows/deploy-pages.yml` executa `npm ci`, `npm run build`, verifica os arquivos PWA e publica `dist` como artefato. O GitHub Pages deve estar configurado para usar **GitHub Actions**.
-
-`dist` fica ignorada pelo Git porque é produzida durante o workflow. O PWABuilder deve receber a URL pública publicada, não a URL do repositório.
-
-## Comandos operacionais
+## Build e publicação
 
 ```bash
-npm run dev        # desenvolvimento
-npm run typecheck  # tipos
-npm run lint       # lint
-npm run build      # produção e PWA
-npm run preview    # prévia do build
+npm run build
 ```
+
+O comando gera `dist/`, incluindo manifesto e Service Worker. O workflow de GitHub Pages deve publicar essa pasta. Para criar APK com PWABuilder, use a URL pública já publicada e teste a instalação em modo avião após a primeira abertura.

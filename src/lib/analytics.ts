@@ -146,11 +146,6 @@ export function getComparacaoMensal(transactions: Transaction[]): { mes: string;
   return result;
 }
 
-export function getPatrimonio(transactions: Transaction[], assets: { valor: number }[]): number {
-  const saldo = getSaldo(transactions);
-  const assetTotal = assets.reduce((acc, a) => acc + a.valor, 0);
-  return saldo + assetTotal;
-}
 
 export function getLevel(
   xp: number,

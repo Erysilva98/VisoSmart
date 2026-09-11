@@ -14,8 +14,6 @@ export function Learn() {
   const completeLesson = useStore((s) => s.completeLesson);
   const transactions = useStore((s) => s.transactions);
   const goals = useStore((s) => s.goals);
-  const accounts = useStore((s) => s.accounts);
-  const assets = useStore((s) => s.assets);
   const budgets = useStore((s) => s.budgets);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const navigate = useNavigate();
@@ -108,7 +106,7 @@ export function Learn() {
                   <div className="space-y-3">
                     {(() => {
                       const task = getLessonTask(activeLesson.id);
-                      const completeReady = canCompleteLesson(activeLesson.id, { transactions, goals, accounts, assets, budgets });
+                      const completeReady = canCompleteLesson(activeLesson.id, { transactions, goals, budgets });
                       return <><div className={`p-3 rounded-xl text-sm ${completeReady ? 'bg-primary-50 text-primary-800' : 'bg-ink-50 text-ink-700'}`}><p className="font-semibold mb-1">Atividade prática</p><p>{task.label}</p>{!completeReady && <button type="button" onClick={() => { setActiveLesson(null); navigate(task.path); }} className="mt-2 text-xs font-semibold text-primary-600">Realizar atividade</button>}</div>
                     <button
                       onClick={() => { completeLesson(activeLesson.id); setActiveLesson(null); }}

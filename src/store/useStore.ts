@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type {
-  AppState, Transaction, Goal, Account, Asset, Challenge,
-  ProfileType, Budget, LessonProgress, CategoryId, Transfer, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
+  AppState, Transaction, Goal, Challenge, Investment,
+  ProfileType, Budget, LessonProgress, CategoryId, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
 } from '@/types';
 import { clearState, loadState, requestPersistentStorage, saveState } from '@/lib/db';
 import { getProfileFromExperience, getProfileFromScore, getProfileRank } from '@/data/profiles';
@@ -18,14 +18,11 @@ function initialState(): AppState {
     onboarding: { completed: false, score: 0, profile: null, initialProfile: null },
     transactions: [],
     goals: [],
-    accounts: [],
-    assets: [],
+    investments: [],
     challenges: [],
     challengeHistory: [],
     lessonProgress: [],
     budgets: [],
-    investmentGoal: 0,
-    transfers: [],
     plannedExpenses: [],
     creditCards: [],
     creditCardExpenses: [],
@@ -43,19 +40,13 @@ interface StoreActions {
   addGoal: (g: Omit<Goal, 'id' | 'criadaEm' | 'valorAtual'>) => void;
   updateGoal: (id: string, valorAtual: number) => void;
   deleteGoal: (id: string) => void;
-  addAccount: (a: Omit<Account, 'id'>) => void;
-  updateAccountBalance: (id: string, newSaldo: number) => void;
-  deleteAccount: (id: string) => void;
-  addAsset: (a: Omit<Asset, 'id'>) => void;
-  deleteAsset: (id: string) => void;
-  addInvestment: (nome: string, valor: number) => void;
-  transferBetweenAccounts: (origemId: string, destinoId: string, valor: number, descricao?: string) => void;
+  addInvestment: (investment: Omit<Investment, 'id' | 'criadoEm'>) => void;
+  deleteInvestment: (id: string) => void;
   addXp: (amount: number) => void;
   completeChallenge: (id: string) => void;
   completeLesson: (lessonId: string) => void;
   setBudget: (categoria: CategoryId, limite: number) => void;
   deleteBudget: (categoria: CategoryId) => void;
-  setInvestmentGoal: (valor: number) => void;
   addPlannedExpense: (item: Omit<PlannedExpense, 'id' | 'pagamentos' | 'status'>) => void;
   updatePlannedExpense: (id: string, item: Partial<PlannedExpense>) => void;
   deletePlannedExpense: (id: string) => void;
@@ -165,59 +156,14 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
 
-  addAccount: (a) => {
-    const account: Account = { ...a, id: uid() };
-    set((s) => ({ accounts: [...s.accounts, account] }));
+  addInvestment: (investment) => {
+    const item: Investment = { ...investment, id: uid(), criadoEm: new Date().toISOString() };
+    set((s) => ({ investments: [item, ...s.investments] }));
     get()._persist();
   },
 
-  updateAccountBalance: (id, newSaldo) => {
-    set((s) => ({
-      accounts: s.accounts.map((a) => (a.id === id ? { ...a, saldo: newSaldo } : a)),
-    }));
-    get()._persist();
-  },
-
-  deleteAccount: (id) => {
-    set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) }));
-    get()._persist();
-  },
-
-  addAsset: (a) => {
-    const asset: Asset = { ...a, id: uid() };
-    set((s) => ({ assets: [...s.assets, asset] }));
-    get()._persist();
-  },
-
-  deleteAsset: (id) => {
-    set((s) => ({ assets: s.assets.filter((a) => a.id !== id) }));
-    get()._persist();
-  },
-
-  addInvestment: (nome, valor) => {
-    const asset: Asset = { id: uid(), nome, tipo: 'investimento', valor };
-    set((s) => ({ assets: [...s.assets, asset] }));
-    get()._persist();
-  },
-
-  transferBetweenAccounts: (origemId, destinoId, valor, descricao) => {
-    if (origemId === destinoId || valor <= 0) return;
-    const transfer: Transfer = {
-      id: uid(),
-      contaOrigemId: origemId,
-      contaDestinoId: destinoId,
-      valor,
-      data: new Date().toISOString(),
-      descricao,
-    };
-    set((s) => ({
-      transfers: [transfer, ...s.transfers],
-      accounts: s.accounts.map((a) => {
-        if (a.id === origemId) return { ...a, saldo: a.saldo - valor };
-        if (a.id === destinoId) return { ...a, saldo: a.saldo + valor };
-        return a;
-      }),
-    }));
+  deleteInvestment: (id) => {
+    set((s) => ({ investments: s.investments.filter((item) => item.id !== id) }));
     get()._persist();
   },
 
@@ -335,11 +281,6 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
 
-  setInvestmentGoal: (valor) => {
-    set({ investmentGoal: Math.max(0, valor) });
-    get()._persist();
-  },
-
   toggleCard: (cardId) => {
     set((s) => {
       const isDisabled = s.disabledCards.includes(cardId);
@@ -369,17 +310,14 @@ export const useStore = create<Store>((set, get) => ({
   _persist: () => {
     const state = get();
     const { init: _init, completeOnboarding: _co, addTransaction: _at, deleteTransaction: _dt,
-      addGoal: _ag, updateGoal: _ug, deleteGoal: _dg, addAccount: _aa, updateAccountBalance: _uab,
-      deleteAccount: _da, addAsset: _as, deleteAsset: _dsa, addInvestment: _ai,
-      transferBetweenAccounts: _tba, addXp: _ax, completeChallenge: _cc,
-      completeLesson: _cl, setBudget: _sb, deleteBudget: _db, setInvestmentGoal: _sig, addPlannedExpense: _ape, updatePlannedExpense: _upe, deletePlannedExpense: _dpe, payPlannedExpense: _ppe,
+      addGoal: _ag, updateGoal: _ug, deleteGoal: _dg, addInvestment: _ai, deleteInvestment: _di, addXp: _ax, completeChallenge: _cc,
+      completeLesson: _cl, setBudget: _sb, deleteBudget: _db, addPlannedExpense: _ape, updatePlannedExpense: _upe, deletePlannedExpense: _dpe, payPlannedExpense: _ppe,
       addCreditCard: _acc, updateCreditCard: _ucc, deleteCreditCard: _dcc, addCreditCardExpense: _acce, deleteCreditCardExpense: _dcce, payCreditCardInvoice: _pcci, toggleCard: _tc, reorderCards: _rc,
       resetApp: _ra, _persist: _p, _ensureMonthlyChallenges: _emc,
       ...rest
     } = state;
     void _init; void _co; void _at; void _dt; void _ag; void _ug; void _dg;
-    void _aa; void _uab; void _da; void _as; void _dsa; void _ai; void _tba;
-    void _ax; void _cc; void _cl; void _sb; void _db; void _sig; void _ape; void _upe; void _dpe; void _ppe; void _acc; void _ucc; void _dcc; void _acce; void _dcce; void _pcci; void _tc; void _rc; void _ra;
+    void _ai; void _di; void _ax; void _cc; void _cl; void _sb; void _db; void _ape; void _upe; void _dpe; void _ppe; void _acc; void _ucc; void _dcc; void _acce; void _dcce; void _pcci; void _tc; void _rc; void _ra;
     void _p; void _emc;
     scheduleSave(rest as AppState);
   },

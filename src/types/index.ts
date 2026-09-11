@@ -81,19 +81,12 @@ export interface Goal {
   criadaEm: string;
 }
 
-export interface Account {
+/** Registro independente da Carteira; não representa bens ou patrimônio. */
+export interface Investment {
   id: string;
   nome: string;
-  tipo: 'conta_corrente' | 'poupanca' | 'cartao' | 'dinheiro';
-  saldo: number;
-  cor: string;
-}
-
-export interface Asset {
-  id: string;
-  nome: string;
-  tipo: 'imovel' | 'investimento' | 'veiculo' | 'outro';
   valor: number;
+  criadoEm: string;
 }
 
 export interface Challenge {
@@ -134,27 +127,15 @@ export interface Budget {
   limite: number;
 }
 
-export interface Transfer {
-  id: string;
-  contaOrigemId: string;
-  contaDestinoId: string;
-  valor: number;
-  data: string;
-  descricao?: string;
-}
-
 export interface AppState {
   onboarding: OnboardingState;
   transactions: Transaction[];
   goals: Goal[];
-  accounts: Account[];
-  assets: Asset[];
+  investments: Investment[];
   challenges: Challenge[];
   challengeHistory: ChallengeHistoryEntry[];
   lessonProgress: LessonProgress[];
   budgets: Budget[];
-  investmentGoal: number;
-  transfers: Transfer[];
   plannedExpenses: PlannedExpense[];
   creditCards: CreditCard[];
   creditCardExpenses: CreditCardExpense[];
