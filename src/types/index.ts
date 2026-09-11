@@ -87,6 +87,8 @@ export interface Investment {
   nome: string;
   valor: number;
   criadoEm: string;
+  tipo?: 'disponivel' | 'reserva' | 'investimento';
+  considerarDisponivel?: boolean;
 }
 
 export interface Challenge {

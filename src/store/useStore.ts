@@ -36,11 +36,13 @@ interface StoreActions {
   init: () => Promise<void>;
   completeOnboarding: (score: number) => void;
   addTransaction: (t: Omit<Transaction, 'id'>) => void;
+  updateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
   deleteTransaction: (id: string) => void;
   addGoal: (g: Omit<Goal, 'id' | 'criadaEm' | 'valorAtual'>) => void;
   updateGoal: (id: string, valorAtual: number) => void;
   deleteGoal: (id: string) => void;
   addInvestment: (investment: Omit<Investment, 'id' | 'criadoEm'>) => void;
+  updateInvestment: (id: string, investment: Partial<Investment>) => void;
   deleteInvestment: (id: string) => void;
   addXp: (amount: number) => void;
   completeChallenge: (id: string) => void;
@@ -129,6 +131,13 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
 
+  // Edição preserva o identificador para manter filtros, desafios e histórico consistentes.
+  updateTransaction: (id, transaction) => {
+    set((s) => ({ transactions: s.transactions.map((item) => item.id === id ? { ...transaction, id } : item) }));
+    get()._ensureMonthlyChallenges();
+    get()._persist();
+  },
+
   deleteTransaction: (id) => {
     set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) }));
     get()._persist();
@@ -159,6 +168,11 @@ export const useStore = create<Store>((set, get) => ({
   addInvestment: (investment) => {
     const item: Investment = { ...investment, id: uid(), criadoEm: new Date().toISOString() };
     set((s) => ({ investments: [item, ...s.investments] }));
+    get()._persist();
+  },
+
+  updateInvestment: (id, investment) => {
+    set((s) => ({ investments: s.investments.map((item) => item.id === id ? { ...item, ...investment } : item) }));
     get()._persist();
   },
 
@@ -309,15 +323,15 @@ export const useStore = create<Store>((set, get) => ({
 
   _persist: () => {
     const state = get();
-    const { init: _init, completeOnboarding: _co, addTransaction: _at, deleteTransaction: _dt,
-      addGoal: _ag, updateGoal: _ug, deleteGoal: _dg, addInvestment: _ai, deleteInvestment: _di, addXp: _ax, completeChallenge: _cc,
+    const { init: _init, completeOnboarding: _co, addTransaction: _at, updateTransaction: _ut, deleteTransaction: _dt,
+      addGoal: _ag, updateGoal: _ug, deleteGoal: _dg, addInvestment: _ai, updateInvestment: _ui, deleteInvestment: _di, addXp: _ax, completeChallenge: _cc,
       completeLesson: _cl, setBudget: _sb, deleteBudget: _db, addPlannedExpense: _ape, updatePlannedExpense: _upe, deletePlannedExpense: _dpe, payPlannedExpense: _ppe,
       addCreditCard: _acc, updateCreditCard: _ucc, deleteCreditCard: _dcc, addCreditCardExpense: _acce, deleteCreditCardExpense: _dcce, payCreditCardInvoice: _pcci, toggleCard: _tc, reorderCards: _rc,
       resetApp: _ra, _persist: _p, _ensureMonthlyChallenges: _emc,
       ...rest
     } = state;
-    void _init; void _co; void _at; void _dt; void _ag; void _ug; void _dg;
-    void _ai; void _di; void _ax; void _cc; void _cl; void _sb; void _db; void _ape; void _upe; void _dpe; void _ppe; void _acc; void _ucc; void _dcc; void _acce; void _dcce; void _pcci; void _tc; void _rc; void _ra;
+    void _init; void _co; void _at; void _ut; void _dt; void _ag; void _ug; void _dg;
+    void _ai; void _ui; void _di; void _ax; void _cc; void _cl; void _sb; void _db; void _ape; void _upe; void _dpe; void _ppe; void _acc; void _ucc; void _dcc; void _acce; void _dcce; void _pcci; void _tc; void _rc; void _ra;
     void _p; void _emc;
     scheduleSave(rest as AppState);
   },

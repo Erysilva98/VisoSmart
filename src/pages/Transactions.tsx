@@ -1,7 +1,7 @@
 ﻿import { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Layout } from '@/components/ui/Layout';
 import { FAB } from '@/components/ui/FAB';
 import { QuickAddModal } from '@/components/ui/QuickAddModal';
@@ -11,7 +11,7 @@ import { CATEGORIES } from '@/data/categories';
 import { formatCurrency, formatDate, getMonthName, isSameMonth } from '@/lib/format';
 import * as Icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { CategoryId } from '@/types';
+import type { CategoryId, Transaction } from '@/types';
 
 export function Transactions() {
   const [showAdd, setShowAdd] = useState(false);
@@ -22,6 +22,8 @@ export function Transactions() {
   const location = useLocation();
   const transactions = useStore((s) => s.transactions);
   const deleteTransaction = useStore((s) => s.deleteTransaction);
+  const updateTransaction = useStore((s) => s.updateTransaction);
+  const [editing, setEditing] = useState<Transaction | null>(null);
 
   useEffect(() => {
     const requested = location.state as { filter?: 'receita' | 'despesa'; categoria?: CategoryId; month?: string } | null;
@@ -115,7 +117,8 @@ export function Transactions() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                  className="flex items-center gap-3 p-3 bg-white rounded-2xl shadow-card group"
+                  onClick={() => setEditing(t)}
+                  className="flex items-center gap-3 p-3 bg-white rounded-2xl shadow-card group cursor-pointer"
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: cat.cor + '20' }}>
                     <Icon className="w-5 h-5" style={{ color: cat.cor }} />
@@ -130,7 +133,7 @@ export function Transactions() {
                     {t.tipo === 'receita' ? '+' : '-'}{formatCurrency(t.valor)}
                   </span>
                   <button
-                    onClick={() => deleteTransaction(t.id)}
+                    onClick={(event) => { event.stopPropagation(); deleteTransaction(t.id); }}
                     className="p-1.5 text-ink-300 hover:text-danger transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -144,8 +147,15 @@ export function Transactions() {
 
       <FAB onClick={() => setShowAdd(true)} />
       <QuickAddModal open={showAdd} onClose={() => setShowAdd(false)} />
+      {editing && <TransactionEditor transaction={editing} onClose={() => setEditing(null)} onSave={(transaction) => { updateTransaction(editing.id, transaction); setEditing(null); }} onDelete={() => { deleteTransaction(editing.id); setEditing(null); }} />}
     </Layout>
   );
+}
+
+function TransactionEditor({ transaction, onClose, onSave, onDelete }: { transaction: Transaction; onClose: () => void; onSave: (transaction: Omit<Transaction, 'id'>) => void; onDelete: () => void }) {
+  const [form, setForm] = useState({ tipo: transaction.tipo, categoria: transaction.categoria, valor: String(transaction.valor).replace('.', ','), data: transaction.data.slice(0, 10), descricao: transaction.descricao ?? '' });
+  const canSave = Number(form.valor.replace(',', '.')) > 0;
+  return <div className="fixed inset-0 z-[70] bg-black/40 p-4 flex items-center justify-center"><motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="w-full max-w-md max-h-[82vh] overflow-y-auto bg-white rounded-3xl p-5 shadow-xl"><div className="flex items-center justify-between mb-4"><h2 className="font-bold text-ink-900">Editar transação</h2><button onClick={onClose} className="text-ink-400"><X /></button></div><div className="grid gap-3"><select value={form.tipo} onChange={(event) => setForm({ ...form, tipo: event.target.value as Transaction['tipo'] })} className="input"><option value="despesa">Despesa</option><option value="receita">Receita</option></select><input value={form.valor} inputMode="decimal" onChange={(event) => setForm({ ...form, valor: event.target.value.replace(/[^0-9.,]/g, '') })} className="input" placeholder="Valor"/><select value={form.categoria} onChange={(event) => setForm({ ...form, categoria: event.target.value as CategoryId })} className="input">{Object.values(CATEGORIES).filter((category) => category.tipo === 'ambos' || category.tipo === form.tipo).map((category) => <option key={category.id} value={category.id}>{category.nome}</option>)}</select><input type="date" value={form.data} onChange={(event) => setForm({ ...form, data: event.target.value })} className="input"/><input value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} className="input" placeholder="Descrição opcional"/></div><button disabled={!canSave} onClick={() => onSave({ tipo: form.tipo, categoria: form.categoria, valor: Number(form.valor.replace(',', '.')), data: `${form.data}T12:00:00`, descricao: form.descricao || undefined, origem: transaction.origem })} className="btn-primary w-full mt-4">Salvar alteração</button><button onClick={onDelete} className="w-full text-danger text-sm font-medium mt-3">Excluir</button></motion.section></div>;
 }
 
 
