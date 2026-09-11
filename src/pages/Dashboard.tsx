@@ -128,7 +128,7 @@ export function Dashboard() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 min-[500px]:grid-cols-[48%_48%] items-start gap-y-4 min-[500px]:gap-y-2 min-[500px]:gap-x-[4%]">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-[48%_48%] xl:grid-cols-[minmax(260px,0.75fr)_minmax(320px,1fr)_minmax(320px,1fr)] items-start gap-y-4 min-[360px]:gap-y-2 min-[360px]:gap-x-[4%] xl:gap-6">
         {visibleCards.map((cardId, index) => {
           const meta = CARD_META[cardId];
           if (!meta) return null;
@@ -141,7 +141,7 @@ export function Dashboard() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay, duration: 0.3 }}
-              className={`min-w-0 bg-white rounded-2xl shadow-card p-4 ${cardId === 'saldo' ? 'relative z-30 col-span-1 min-[500px]:col-start-1 min-[500px]:row-start-1' : cardId === 'entradas_saidas' ? 'col-span-1 min-[500px]:col-start-2 min-[500px]:row-start-1 min-[500px]:row-span-2 min-[500px]:self-stretch' : cardId === 'score' ? 'relative z-20 col-span-1 min-[500px]:col-start-1 min-[500px]:row-start-2' : 'col-span-1 min-[500px]:col-span-2 min-[500px]:mt-4'}`}
+              className={`min-w-0 bg-white rounded-2xl shadow-card p-4 ${cardId === 'saldo' ? 'relative z-30 col-span-1 min-[360px]:col-start-1 min-[360px]:row-start-1 xl:col-start-1 xl:row-start-1' : cardId === 'entradas_saidas' ? 'col-span-1 min-[360px]:col-start-2 min-[360px]:row-start-1 min-[360px]:row-span-2 min-[360px]:self-stretch xl:col-start-2 xl:col-end-4 xl:row-start-1 xl:row-span-2' : cardId === 'score' ? 'relative z-20 col-span-1 min-[360px]:col-start-1 min-[360px]:row-start-2 xl:col-start-1 xl:row-start-2' : 'col-span-1 min-[360px]:col-span-2 min-[360px]:mt-4 xl:col-span-3 xl:mt-0'}`}
             >
               {cardId === 'saldo' && (
                 <SaldoTotalCard
@@ -336,7 +336,7 @@ function SaldoTotalCard({ saldo, accounts, investments, icon: Icon }: { saldo: n
       </motion.div>
       <AnimatePresence initial={false}>
         {isExpanded && hasItems && (
-          <motion.div ref={detailRef} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="absolute left-0 top-full z-50 mt-2 w-full min-[500px]:w-[222.222%] p-4 bg-white rounded-2xl shadow-card">
+          <motion.div ref={detailRef} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="absolute left-0 top-full z-50 mt-2 w-full min-[360px]:w-[222.222%] p-4 bg-white rounded-2xl shadow-card">
             <div className="space-y-2">
               <p className="text-[10px] font-semibold tracking-wide text-ink-400">DETALHAMENTO</p>
               {items.map((item) => {
@@ -476,7 +476,7 @@ function ScoreCard(props: { score: number; sugestoes: { tipo: string; texto: str
           </p>
         </div>
       </div>
-      <AnimatePresence initial={false}>{expanded && <motion.div ref={suggestionsRef} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="absolute left-0 top-full z-50 mt-2 w-full min-[500px]:w-[166.667%] p-4 bg-white rounded-2xl shadow-card"><p className="text-sm font-bold text-ink-900 mb-3">Sugestões</p><div className="space-y-2">{props.sugestoes.map((suggestion, index) => <div key={index} className="p-2.5 rounded-xl bg-ink-50 text-xs text-ink-700">{suggestion.texto}</div>)}</div></motion.div>}</AnimatePresence>
+      <AnimatePresence initial={false}>{expanded && <motion.div ref={suggestionsRef} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="absolute left-0 top-full z-50 mt-2 w-full min-[360px]:w-[166.667%] p-4 bg-white rounded-2xl shadow-card"><p className="text-sm font-bold text-ink-900 mb-3">Sugestões</p><div className="space-y-2">{props.sugestoes.map((suggestion, index) => <div key={index} className="p-2.5 rounded-xl bg-ink-50 text-xs text-ink-700">{suggestion.texto}</div>)}</div></motion.div>}</AnimatePresence>
     </CardShell></div>
   );
 }
@@ -545,5 +545,6 @@ function MetasCard(props: { goals: { id: string; titulo: string; valorAlvo: numb
     </CardShell>
   );
 }
+
 
 

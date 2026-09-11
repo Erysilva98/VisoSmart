@@ -81,8 +81,8 @@ export function Layout({ children, headerRight, showHeader = true, showNav = tru
   return (
     <div className="min-h-screen bg-ink-50">
       {showHeader && (
-        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-ink-200 safe-top">
-          <div className="max-w-md mx-auto px-4 py-3">
+        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-ink-200 safe-top min-[768px]:ml-56">
+          <div className="max-w-md mx-auto px-4 py-3 min-[768px]:max-w-none min-[768px]:px-8">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
               <div
@@ -112,7 +112,7 @@ export function Layout({ children, headerRight, showHeader = true, showNav = tru
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className={`max-w-md mx-auto px-4 py-4 ${showNav ? 'pb-24' : ''}`}
+        className={`max-w-md mx-auto px-4 py-4 ${showNav ? 'pb-24' : ''} min-[768px]:ml-56 min-[768px]:mr-8 min-[768px]:max-w-[1440px] min-[768px]:px-8 min-[768px]:py-8 min-[768px]:pb-8`}
       >
         {children}
       </motion.main>
