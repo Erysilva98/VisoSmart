@@ -1,4 +1,4 @@
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { BookOpen, ChevronRight, Home, ReceiptText, ShieldCheck, Target, UserRound } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { PROFILES } from '@/data/profiles';
@@ -12,11 +12,10 @@ const menu = [
   { label: 'Perfil', path: '/perfil', icon: UserRound },
 ];
 export function BottomNav() {
-  const isHome = useLocation().pathname === '/dashboard';
   const profile = useStore((s) => s.onboarding.profile);
   if (!profile) return null;
   const config = PROFILES[profile];
-  return <nav aria-label="Navegação principal" className={`${isHome ? 'hidden' : 'block'} md:block fixed bottom-0 left-0 right-0 z-40 border-t border-ink-200/80 bg-white/95 backdrop-blur-xl safe-bottom md:top-0 md:right-auto md:w-56 md:border-r md:border-t-0 md:bg-white`}>
+  return <nav aria-label="Navegação principal" className="fixed bottom-0 left-0 right-0 z-40 border-t border-ink-200/80 bg-white/95 backdrop-blur-xl safe-bottom md:top-0 md:right-auto md:w-56 md:border-r md:border-t-0 md:bg-white">
     <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2 md:h-full md:max-w-none md:flex-col md:items-stretch md:justify-start md:px-4 md:py-7">
       <Link to="/dashboard" aria-label="Nexo início" className="mb-4 hidden px-3 md:block"><Brand /></Link>
       <p className="mb-7 hidden px-3 text-xs leading-relaxed text-ink-500 md:block">Seu futuro começa no dia a dia</p>

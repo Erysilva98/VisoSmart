@@ -147,6 +147,7 @@ body {
 /* A Home prioriza o resumo completo em uma tela de smartphone comum. */
 @media (min-width: 768px) {
   .home-main { display: grid; align-content: start; gap: 16px; }
+  .calendar-compact .calendar-day { min-height: 38px; }
 }
 
 @media (min-width: 1024px) {
@@ -155,11 +156,11 @@ body {
 
 @media (max-width: 767px) {
   .home-shell { min-height: 100dvh; }
-  .home-main { display: grid; gap: 7px; padding-top: 8px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .home-main { display: grid; gap: 7px; padding-top: 8px; padding-bottom: calc(9rem + env(safe-area-inset-bottom)); }
   .home-month .flex > button { height: 38px; }
   .home-mission { min-height: 36px; }
   .home-shortcuts button { min-height: 52px; }
-  .calendar-compact .calendar-day { height: 31px; position: relative; }
+  .calendar-compact .calendar-day { height: 35px; position: relative; }
   .calendar-compact .calendar-day > div:first-of-type > span:first-child { width: 17px; height: 17px; border-radius: 6px; }
   .calendar-compact .calendar-day > div:first-of-type svg { width: 11px; height: 11px; }
   .calendar-compact .calendar-day > span:last-child { position: absolute; bottom: 0; }
@@ -176,7 +177,7 @@ body {
   .home-summary { padding-top: 5px; padding-bottom: 5px; }
   .home-summary > p:nth-of-type(2) { display: none; }
   .home-summary .mt-2 { margin-top: 4px; }
-  .calendar-compact .calendar-day { height: 27px; }
+  .calendar-compact .calendar-day { height: 29px; }
   .calendar-compact .calendar-day > div:first-of-type > span:first-child { width: 14px; height: 14px; }
   .calendar-compact .calendar-day > div:first-of-type svg { width: 9px; height: 9px; }
   .donut-compact svg { max-width: 74px; }
