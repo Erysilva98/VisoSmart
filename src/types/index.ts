@@ -16,17 +16,20 @@ export type CategoryId =
   | 'investimentos_economia'
   | 'mercado'
   | 'celular'
+  | 'metas'
+  | 'saque'
   | 'salario'
   | 'outros';
 
 export interface Transaction {
   id: string;
-  tipo: TransactionType;
+  tipo: TransactionType | 'transferencia';
   valor: number;
   categoria: CategoryId;
   data: string; // ISO date string
   descricao?: string;
-  origem?: 'saldo_inicial' | 'divida' | 'prevista' | 'cartao' | 'fixa' | 'recorrente';
+  origem?: 'saldo_inicial' | 'divida' | 'prevista' | 'cartao' | 'fixa' | 'recorrente' | 'meta_aporte' | 'meta_saque';
+  metaId?: string;
 }
 
 export type PlannedExpenseType = 'divida' | 'fixa' | 'recorrente' | 'avulsa' | 'outro';
@@ -148,7 +151,7 @@ export interface JourneyPreferences {
   expenseCategories: CategoryId[];
   focus: 'understand' | 'organize' | 'save';
 }
-export type LearningAction = 'filter' | 'calendar' | 'budget' | 'goal';
+export type LearningAction = 'filter' | 'calendar' | 'budget' | 'goal' | 'expenseCategories' | 'incomeCategories' | 'chart' | 'profile';
 
 export interface AppState {
   categoryDefinitions?: CategoryDefinition[];

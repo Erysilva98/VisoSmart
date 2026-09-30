@@ -145,6 +145,12 @@ export const useStore = create<Store>((set, get) => ({
         merged.transactions = withInitialBalance(merged.transactions, merged.transactions.find((item) => item.origem === 'saldo_inicial')?.valor ?? merged.openingBalance!, earliest);
         merged.openingBalance = 0;
       }
+      // Preserve reserves created before transfers were shown in the statement.
+      for (const goal of merged.goals) {
+        const recordedCents = merged.transactions.filter((item) => item.metaId === goal.id).reduce((sum, item) => sum + Math.round(item.valor * 100) * (item.origem === 'meta_aporte' ? 1 : item.origem === 'meta_saque' ? -1 : 0), 0);
+        const missingCents = Math.round(goal.valorAtual * 100) - recordedCents;
+        if (missingCents !== 0) merged.transactions = [{ id: uid(), tipo: 'transferencia', categoria: missingCents > 0 ? 'metas' : 'saque', origem: missingCents > 0 ? 'meta_aporte' : 'meta_saque', metaId: goal.id, valor: Math.abs(missingCents) / 100, data: localDateTime(), descricao: goal.titulo }, ...merged.transactions];
+      }
       merged.plannedExpenses = merged.plannedExpenses.map((expense) => ({ ...expense, pagamentos: expense.pagamentos ?? [], status: expense.status ?? 'ativo' }));
       const currentMonth = getCurrentMonthKey();
       merged.challenges = merged.challenges.filter((challenge) => !(challenge.mes === currentMonth && (challenge.teste || !challenge.nivelMinimo)));
@@ -164,6 +170,7 @@ export const useStore = create<Store>((set, get) => ({
       syncCategories(merged.categoryDefinitions);
       set({ ...merged });
       get()._ensureMonthlyChallenges();
+      get()._persist();
     }
   },
 
@@ -231,9 +238,15 @@ export const useStore = create<Store>((set, get) => ({
       if (!goal || !Number.isFinite(valorAtual) || valorAtual < 0 || valorAtual > goal.valorAlvo) return s;
       const increase = Math.round((valorAtual - goal.valorAtual) * 100) / 100;
       if (increase > 0 && increase > recordedMoney(s.transactions, s.goals, s.openingBalance).available) return s;
+      const movement: Transaction | null = increase === 0 ? null : {
+        id: uid(), tipo: 'transferencia', categoria: increase > 0 ? 'metas' : 'saque',
+        origem: increase > 0 ? 'meta_aporte' : 'meta_saque', metaId: id,
+        valor: Math.abs(increase), data: localDateTime(), descricao: goal.titulo,
+      };
       return {
         goals: s.goals.map((g) => (g.id === id ? { ...g, valorAtual } : g)),
         investments: goal?.investimentoId ? s.investments.map((item) => item.id === goal.investimentoId ? { ...item, valor: valorAtual } : item) : s.investments,
+        transactions: movement ? [movement, ...s.transactions] : s.transactions,
       };
     });
     if (get().goals.find((item) => item.id === id)?.valorAtual === valorAtual) get().recordLearningAction('goal');
@@ -241,7 +254,14 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   deleteGoal: (id) => {
-    set((s) => ({ goals: s.goals.filter((g) => g.id !== id), investments: s.investments.filter((item) => item.metaId !== id) }));
+    set((s) => {
+      const goal = s.goals.find((item) => item.id === id);
+      const withdrawal: Transaction | null = goal && goal.valorAtual > 0 ? {
+        id: uid(), tipo: 'transferencia', categoria: 'saque', origem: 'meta_saque', metaId: id,
+        valor: goal.valorAtual, data: localDateTime(), descricao: goal.titulo,
+      } : null;
+      return { goals: s.goals.filter((g) => g.id !== id), investments: s.investments.filter((item) => item.metaId !== id), transactions: withdrawal ? [withdrawal, ...s.transactions] : s.transactions };
+    });
     get()._persist();
   },
 

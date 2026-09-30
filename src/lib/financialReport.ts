@@ -72,7 +72,7 @@ export function createFinancialReport(state: AppState) {
   if (!ordered.length) text('Nenhum registro cadastrado.');
   ordered.forEach((item) => {
     pageSpace(24);
-    text(`${formatDate(item.data)} · ${item.origem === 'saldo_inicial' ? 'Saldo inicial' : item.tipo === 'receita' ? 'Entrada' : 'Despesa'} · ${CATEGORIES[item.categoria].nome} · ${money(item.valor)}`, 10, true);
+    text(`${formatDate(item.data)} · ${item.origem === 'saldo_inicial' ? 'Saldo inicial' : item.origem === 'meta_aporte' ? 'Reserva para meta' : item.origem === 'meta_saque' ? 'Saque da meta' : item.tipo === 'receita' ? 'Entrada' : 'Despesa'} · ${CATEGORIES[item.categoria].nome} · ${money(item.valor)}`, 10, true);
     if (item.descricao) text(item.descricao, 9);
     y += 2;
   });

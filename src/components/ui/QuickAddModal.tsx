@@ -23,6 +23,7 @@ export function QuickAddModal({ open, onClose, initialDate }: QuickAddModalProps
 }
 
 function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose: () => void }) {
+  const recordLearningAction = useStore((s) => s.recordLearningAction);
   const addTransaction = useStore((s) => s.addTransaction);
   const transactions = useStore((s) => s.transactions);
   const preferences = useStore((s) => s.preferences);
@@ -75,6 +76,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
   }, [step]);
 
   function selectCategory(category: CategoryId) {
+    recordLearningAction(tipo === 'despesa' ? 'expenseCategories' : 'incomeCategories');
     setCategoria(category);
     setStep('valor');
   }
@@ -90,6 +92,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
   function changeType(nextType: TransactionType) {
     if (tipo === nextType) return;
     setTipo(nextType);
+    if (nextType === 'receita') recordLearningAction('incomeCategories');
     setAllCategories(false);
     setCategoria(null);
     setValor('');

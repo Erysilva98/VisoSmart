@@ -27,7 +27,21 @@ const decisions: Topic[] = [
   { id: 'review', title: 'Uma revisão que cabe na rotina', content: 'No fim de um período, veja a maior categoria, o que passou dos limites e como suas metas caminharam. Escolha um único ajuste possível. Seus registros ajudam a decidir; não precisam estar perfeitos para trazer uma descoberta.', task: 'Compare as categorias na Home e escolha um ajuste para experimentar no próximo mês.', path: '/dashboard', question: 'Você encontrou um gasto repetido que não usa mais. Qual próximo passo é útil?', options: ['Revisar essa cobrança e decidir se quer mantê-la', 'Apagar o histórico inteiro'], correct: 0, explanation: 'Um ajuste concreto usa o que você descobriu e preserva os dados para comparar depois.' },
 ];
 const groups = [{ name: 'Entender meu dinheiro', topics: basics }, { name: 'Usar o Nexo no dia a dia', topics: app }, { name: 'Fazer escolhas melhores', topics: decisions }];
-export const TRAIL_LESSONS: Lesson[] = groups.flatMap((group, index) => group.topics.map((topic) => ({ id: `trail-${topic.id}`, titulo: topic.title, descricao: topic.task, duracao: '2 min', xp: 15 + index * 5, perfil: 'all', conteudo: topic.content, desafio: topic.validation ?? 'reflexao', modulo: group.name, desafioPratico: { tipo: topic.validation ?? 'reflexao', descricao: topic.task, validacao: topic.validation ?? 'reflexao', rota: topic.path }, question: { text: topic.question, options: topic.options, correct: topic.correct, explanation: topic.explanation } })));
+const appActivity = (topic: Topic) => {
+  if (topic.validation) return { validation: topic.validation, description: topic.task };
+  if (topic.id === 'categories' || topic.id === 'quick') return { validation: 'categorias_despesa', description: 'Abra o + e escolha uma categoria de despesa. Pode fechar sem salvar.' };
+  if (topic.id === 'income') return { validation: 'categorias_entrada', description: 'Abra o + e veja as categorias de entrada. Não precisa registrar um valor.' };
+  if (topic.path === '/gastos') return { validation: 'filtro', description: 'No Extrato, busque ou filtre seus registros.' };
+  if (topic.path === '/dashboard') return { validation: 'grafico', description: 'Na Home, toque em uma categoria do gráfico para ver seus gastos.' };
+  if (topic.path === '/metas') return { validation: 'meta', description: 'Crie uma meta no app com valor e prazo.' };
+  if (topic.path === '/orcamentos') return { validation: 'orcamento', description: 'Defina um limite em Meus limites.' };
+  if (topic.path === '/perfil') return { validation: 'perfil', description: 'No Perfil, abra Minhas categorias para revisar suas escolhas.' };
+  return { validation: 'reflexao', description: topic.task };
+};
+export const TRAIL_LESSONS: Lesson[] = groups.flatMap((group, index) => group.topics.map((topic) => {
+  const activity = appActivity(topic);
+  return { id: `trail-${topic.id}`, titulo: topic.title, descricao: activity.description, duracao: '2 min', xp: 15 + index * 5, perfil: 'all', conteudo: topic.content, desafio: activity.validation, modulo: group.name, desafioPratico: { tipo: activity.validation, descricao: activity.description, validacao: activity.validation, rota: topic.path }, question: { text: topic.question, options: topic.options, correct: topic.correct, explanation: topic.explanation } };
+}));
 export function orderedTrail(profile: ProfileType, focus?: JourneyPreferences['focus']): Lesson[] {
   const order = profile === 'explorer' ? [0, 1, 2] : profile === 'equilibrado' ? [1, 0, 2] : [2, 1, 0];
   return order.flatMap((index) => {

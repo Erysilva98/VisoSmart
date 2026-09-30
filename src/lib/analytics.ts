@@ -2,7 +2,7 @@ import type { Transaction, CategoryId, Budget } from '@/types';
 import { isSameMonth, isPreviousMonth, getMonthKey } from './format';
 
 export function getSaldo(transactions: Transaction[]): number {
-  return transactions.reduce((acc, t) => acc + (t.tipo === 'receita' ? t.valor : -t.valor), 0);
+  return transactions.reduce((acc, t) => acc + (t.tipo === 'receita' ? t.valor : t.tipo === 'despesa' ? -t.valor : 0), 0);
 }
 
 export function getReceitasMes(transactions: Transaction[], ref: Date = new Date()): number {
