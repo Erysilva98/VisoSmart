@@ -79,11 +79,41 @@ interface StoreActions {
 type Store = AppState & StoreActions;
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingSave: AppState | null = null;
+let saveListenersRegistered = false;
+
+function flushPendingSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (!pendingSave) return;
+
+  const state = pendingSave;
+  pendingSave = null;
+  void saveState(state).catch((error: unknown) => {
+    // Keep the newest state queued so a later foreground/visibility event can retry.
+    pendingSave = state;
+    console.error('Não foi possível salvar os dados offline.', error);
+  });
+}
+
+function registerSaveListeners() {
+  if (saveListenersRegistered || typeof window === 'undefined') return;
+  saveListenersRegistered = true;
+  window.addEventListener('pagehide', flushPendingSave);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingSave();
+    else if (pendingSave) scheduleSave(pendingSave);
+  });
+}
 
 function scheduleSave(state: AppState) {
+  pendingSave = state;
+  registerSaveListeners();
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    saveState(state);
+    flushPendingSave();
   }, 300);
 }
 
@@ -395,6 +425,7 @@ export const useStore = create<Store>((set, get) => ({
       clearTimeout(saveTimer);
       saveTimer = null;
     }
+    pendingSave = null;
     syncCategories();
     set({ ...initialState(), categoryDefinitions: [], preferences: undefined, openingBalance: undefined, incomePattern: undefined, learningActions: undefined, lessonReviews: undefined });
     await clearState();
