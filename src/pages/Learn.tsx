@@ -1,135 +1,33 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Clock, Award, X, CheckCircle, BookOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { BookOpen, Check, ChevronRight, Flag, LockKeyhole, Play, Sparkles, Trophy } from 'lucide-react';
 import { Layout } from '@/components/ui/Layout';
+import { ProgressBar } from '@/components/journey/Journey';
 import { useStore } from '@/store/useStore';
 import { getLessonsForProfile, type Lesson } from '@/data/lessons';
-import { canCompleteLesson, getLessonTask } from '@/lib/progress';
-import type { ProfileType } from '@/types';
+import { PROFILES } from '@/data/profiles';
+import { canCompleteLesson } from '@/lib/progress';
 
 export function Learn() {
-  const profile = useStore((s) => s.onboarding.profile) as ProfileType;
-  const lessonProgress = useStore((s) => s.lessonProgress);
-  const completeLesson = useStore((s) => s.completeLesson);
-  const transactions = useStore((s) => s.transactions);
-  const goals = useStore((s) => s.goals);
-  const accounts = useStore((s) => s.accounts);
-  const assets = useStore((s) => s.assets);
-  const budgets = useStore((s) => s.budgets);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const navigate = useNavigate();
-
-  const lessons = getLessonsForProfile(profile);
-
-  function isDone(id: string) {
-    return lessonProgress.some((l) => l.lessonId === id && l.concluido);
-  }
-
-  return (
-    <Layout title="Aprender">
-      <div className="p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl text-white mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <GraduationCap className="w-5 h-5" />
-          <h2 className="font-bold">Trilha de Aprendizado</h2>
-        </div>
-        <p className="text-sm opacity-90">
-          {lessons.filter((l) => isDone(l.id)).length} de {lessons.length} aulas concluídas
-        </p>
-        <div className="h-2 bg-white/20 rounded-full overflow-hidden mt-2">
-          <div className="h-full bg-white rounded-full transition-all" style={{ width: `${(lessons.filter((l) => isDone(l.id)).length / lessons.length) * 100}%` }} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {lessons.map((lesson, i) => {
-          const done = isDone(lesson.id);
-          return (
-            <motion.button
-              key={lesson.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => setActiveLesson(lesson)}
-              className="w-full text-left p-4 bg-white rounded-2xl shadow-card flex items-start gap-3"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${done ? 'bg-primary-100' : 'bg-ink-100'}`}>
-                {done ? <CheckCircle className="w-5 h-5 text-primary-600" /> : <BookOpen className="w-5 h-5 text-ink-500" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-ink-900 text-sm">{lesson.titulo}</h3>
-                {lesson.modulo && <p className="text-[10px] font-semibold text-primary-600 mt-0.5">{lesson.modulo} · Nível {lesson.nivel}</p>}
-                <p className="text-xs text-ink-500 mt-0.5 line-clamp-2">{lesson.descricao}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="flex items-center gap-1 text-xs text-ink-400">
-                    <Clock className="w-3 h-3" /> {lesson.duracao}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-primary-600 font-medium">
-                    <Award className="w-3 h-3" /> +{lesson.xp} XP
-                  </span>
-                </div>
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
-
-      <AnimatePresence>
-        {activeLesson && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setActiveLesson(null)}
-              className="fixed inset-0 bg-black/40 z-50"
-            />
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-x-4 top-[8.0625rem] z-50 bg-white rounded-3xl max-w-md mx-auto max-h-[82vh] overflow-y-auto safe-bottom"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-ink-100 sticky top-0 bg-white rounded-t-3xl">
-                <h2 className="font-bold text-ink-900">{activeLesson.titulo}</h2>
-                <button onClick={() => setActiveLesson(null)} className="p-1 text-ink-500">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="chip bg-ink-100 text-ink-600 text-xs">
-                    <Clock className="w-3 h-3" /> {activeLesson.duracao}
-                  </span>
-                  <span className="chip bg-primary-50 text-primary-700 text-xs">
-                    <Award className="w-3 h-3" /> +{activeLesson.xp} XP
-                  </span>
-                </div>
-                <p className="text-sm text-ink-700 leading-relaxed mb-4">{activeLesson.conteudo}</p>
-                {activeLesson.modulo && <p className="text-xs font-semibold text-primary-600 mb-3">{activeLesson.modulo} · Nível {activeLesson.nivel}</p>}
-                {!isDone(activeLesson.id) ? (
-                  <div className="space-y-3">
-                    {(() => {
-                      const task = getLessonTask(activeLesson.id);
-                      const completeReady = canCompleteLesson(activeLesson.id, { transactions, goals, accounts, assets, budgets });
-                      return <><div className={`p-3 rounded-xl text-sm ${completeReady ? 'bg-primary-50 text-primary-800' : 'bg-ink-50 text-ink-700'}`}><p className="font-semibold mb-1">Atividade prática</p><p>{task.label}</p>{!completeReady && <button type="button" onClick={() => { setActiveLesson(null); navigate(task.path); }} className="mt-2 text-xs font-semibold text-primary-600">Realizar atividade</button>}</div>
-                    <button
-                      onClick={() => { completeLesson(activeLesson.id); setActiveLesson(null); }}
-                      disabled={!completeReady}
-                      className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <CheckCircle className="w-5 h-5" /> Concluir aula (+{activeLesson.xp} XP)
-                    </button>
-                      </>;
-                    })()}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 text-primary-600 font-semibold py-2">
-                    <CheckCircle className="w-5 h-5" /> Aula concluída
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </Layout>
-  );
+  const state = useStore();
+  const profile = state.onboarding.profile ?? 'explorer';
+  const config = PROFILES[profile];
+  const lessons = getLessonsForProfile(profile, state.preferences?.focus);
+  const completed = new Set(state.lessonProgress.filter((item) => item.concluido).map((item) => item.lessonId));
+  const active = lessons.find((item) => !completed.has(item.id));
+  const [review, setReview] = useState<string | null>(null);
+  const [moduleChoice, setModuleChoice] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const lesson = lessons.find((item) => item.id === review) ?? active ?? lessons[0];
+  const modules = [...new Set(lessons.map((item) => item.modulo!))];
+  const currentModule = moduleChoice ?? active?.modulo ?? modules[0];
+  const done = lessons.filter((item) => completed.has(item.id)).length;
+  const openLesson = (id: string) => { setReview(id); requestAnimationFrame(() => document.getElementById('lesson-detail')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })); };
+  return <Layout title="Aprender" compact><header className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-semibold">Seu caminho de aprendizado</h1><p className="mt-1 text-xs text-ink-500">Dinheiro, escolhas e prática no app. Um passo por vez.</p></div><span className="rounded-full px-3 py-2 text-xs font-semibold" style={{ color: config.cor, backgroundColor: config.corLight }}>Trilha {config.nome}</span></header>{message && <p role="status" className="mb-3 rounded-xl bg-primary-50 p-3 text-xs text-primary-800">{message}</p>}<div className="mb-4 rounded-2xl border border-ink-200 bg-white p-4"><div className="mb-2 flex justify-between text-xs"><span>{done} de {lessons.length} etapas</span><Link to="/perfil" className="font-semibold text-primary-700">Ver minha evolução</Link></div><ProgressBar value={done / lessons.length * 100} label="Etapas concluídas" color={config.cor} />{active && <button type="button" onClick={() => openLesson(active.id)} className="mt-2 flex min-h-11 items-center gap-2 text-xs font-semibold text-primary-700">Continuar: {active.titulo}<ChevronRight className="h-3 w-3" /></button>}{!active && <p className="mt-3 flex items-center gap-2 text-xs text-primary-700"><Trophy className="h-4 w-4" />Trilha concluída! Revise as descobertas quando precisar.</p>}</div><div className="space-y-4"><div id="lesson-detail" className="scroll-mt-24"><LessonCard key={lesson.id} lesson={lesson} done={completed.has(lesson.id)} ready={canCompleteLesson(lesson.id, state)} onReview={(answer) => { state.reviewLesson(lesson.id, answer); setMessage('Revisão registrada para a missão do mês. O XP desta etapa não se repete.'); }} onComplete={(answer) => { state.completeLesson(lesson.id, answer); setMessage(`Etapa concluída: ${lesson.titulo}. +${lesson.xp} XP pela descoberta!`); setReview(null); setModuleChoice(null); }} /></div><section className="overflow-hidden rounded-2xl border border-ink-200 bg-white"><div className="grid grid-cols-3 gap-1 border-b border-ink-100 p-2" aria-label="Módulos da trilha">{modules.map((module, index) => <button key={module} type="button" aria-pressed={currentModule === module} onClick={() => setModuleChoice(module)} className={`min-h-12 rounded-xl px-2 py-2 text-[10px] leading-relaxed ${currentModule === module ? 'bg-primary-50 font-semibold text-primary-800' : 'text-ink-500'}`}>{index + 1}. {module}</button>)}</div><ol className="space-y-1 bg-ink-50/40 px-4 py-5">{lessons.filter((item) => item.modulo === currentModule).map((item, index, all) => { const isDone = completed.has(item.id); const current = item.id === active?.id; const locked = !isDone && !current; const Icon = isDone ? Check : locked ? LockKeyhole : Play; return <li key={item.id} className="relative pb-4" style={{ marginLeft: [0, 16, 32, 16, 0, 16][index] }}>{index < all.length - 1 && <span aria-hidden="true" className="absolute left-5 top-11 h-7 border-l-2 border-dashed border-ink-200" />}<button type="button" disabled={locked} aria-current={current ? 'step' : undefined} onClick={() => openLesson(item.id)} className="relative flex min-h-14 w-full items-center gap-3 text-left disabled:cursor-not-allowed"><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${current ? 'border-primary-200 bg-primary-50 text-primary-700 ring-2 ring-primary-50' : isDone ? 'border-primary-100 bg-white text-primary-600' : 'border-ink-200 bg-ink-50 text-ink-400'}`}><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1">{current && <span className="mb-0.5 block text-[9px] font-bold uppercase tracking-wider text-primary-700">Você está aqui</span>}<span className={`block text-xs font-semibold ${locked ? 'text-ink-400' : 'text-ink-800'}`}>{item.titulo}</span><span className="mt-1 block text-[10px] text-ink-500">{isDone ? 'Concluída · revisar' : locked ? 'Após a etapa anterior' : `${item.duracao} · +${item.xp} XP`}</span></span></button></li>; })}<li className="flex justify-center gap-2 pt-2 text-[10px] text-ink-500"><Flag className="h-3 w-3" />Seu ritmo também faz parte do caminho.</li></ol></section></div></Layout>;
+}
+function LessonCard({ lesson, done, ready, onComplete, onReview }: { lesson: Lesson; done: boolean; ready: boolean; onComplete: (answer: number) => void; onReview: (answer: number) => void }) {
+  const [answer, setAnswer] = useState<number | null>(null);
+  const correct = answer === lesson.question?.correct;
+  return <motion.section initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-ink-200 bg-white p-5"><p className="flex items-center gap-2 text-xs text-primary-700"><BookOpen className="h-4 w-4" />{done ? 'Revisão' : 'Sua etapa atual'} · {lesson.duracao}</p><h2 className="mt-3 text-xl font-semibold">{lesson.titulo}</h2><p className="mt-4 text-sm leading-7 text-ink-600">{lesson.conteudo}</p><div className="mt-4 rounded-xl bg-ink-50 p-3"><p className="text-xs font-semibold">Explore na prática</p><p className="mt-2 text-xs leading-relaxed text-ink-600">{lesson.desafioPratico?.descricao}</p>{lesson.desafioPratico?.rota !== '/aprender' && <Link className="text-link mt-1" to={lesson.desafioPratico?.rota ?? '/dashboard'}>Experimentar no app<ChevronRight className="h-3 w-3" /></Link>}</div>{lesson.question && <fieldset className="mt-5"><legend className="mb-2 text-sm font-semibold">{lesson.question.text}</legend>{lesson.question.options.map((option, index) => <button type="button" key={option} aria-pressed={answer === index} onClick={() => setAnswer(index)} className={`mb-2 min-h-11 w-full rounded-xl border p-3 text-left text-xs ${answer === index ? 'border-primary-400 bg-primary-50 text-primary-800' : 'border-ink-200'}`}>{option}</button>)}{answer !== null && <p role="status" className="mt-2 text-xs leading-relaxed text-ink-600">{correct ? lesson.question.explanation : 'Vamos pensar de novo: ' + lesson.question.explanation}</p>}</fieldset>}{done ? <div className="mt-4"><p className="text-xs text-primary-700">Etapa concluída. Você pode revisar para a missão mensal, sem repetir o XP desta etapa.</p><button type="button" disabled={!correct} onClick={() => onReview(answer!)} className="btn-secondary mt-3 w-full text-xs">Registrar revisão do mês</button></div> : <><button type="button" disabled={!ready || !correct} onClick={() => onComplete(answer!)} className="btn-primary mt-4 w-full text-sm"><Sparkles className="h-4 w-4" />Concluir etapa · +{lesson.xp} XP</button>{!ready && <p className="mt-2 text-xs text-ink-500">Experimente a função indicada acima para concluir. Não precisa fazer novas compras.</p>}</>}</motion.section>;
 }

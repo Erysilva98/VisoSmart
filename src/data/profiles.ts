@@ -40,10 +40,10 @@ export interface ProfileConfig {
 export const PROFILES: Record<ProfileType, ProfileConfig> = {
   explorer: {
     id: 'explorer',
-    nome: 'Explorador Financeiro',
-    descricao: 'Criar consciência financeira',
-    cor: '#16a34a',
-    corLight: '#dcfce7',
+    nome: 'Explorador',
+    descricao: 'Descoberta',
+    cor: '#4FA3FF',
+    corLight: '#EFF7FF',
     icon: 'Compass',
     objetivo: 'Criar consciência financeira',
     menu: [
@@ -65,16 +65,16 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
   },
   equilibrado: {
     id: 'equilibrado',
-    nome: 'Equilibrado Financeiro',
-    descricao: 'Organização e equilíbrio',
-    cor: '#0891b2',
-    corLight: '#cffafe',
-    icon: 'Scale',
+    nome: 'Equilibrado',
+    descricao: 'Organização',
+    cor: '#7C5CFF',
+    corLight: '#F3F0FF',
+    icon: 'Route',
     objetivo: 'Organizar e equilibrar suas finanças',
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Aprender', path: '/aprender', icon: 'GraduationCap' },
       { label: 'Perfil', path: '/perfil', icon: 'User' },
     ],
@@ -91,16 +91,16 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
   },
   construtor: {
     id: 'construtor',
-    nome: 'Construtor Financeiro',
-    descricao: 'Planejamento e patrimônio',
-    cor: '#7c3aed',
-    corLight: '#ede9fe',
-    icon: 'TrendingUp',
-    objetivo: 'Construir patrimônio e planejar o futuro',
+    nome: 'Expert',
+    descricao: 'Estratégia',
+    cor: '#16C784',
+    corLight: '#E6FAF2',
+    icon: 'Route',
+    objetivo: 'Usar o histórico para planejar melhor',
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Orçamento', path: '/orcamentos', icon: 'SlidersHorizontal' },
       { label: 'Análise', path: '/analises', icon: 'BarChart3' },
       { label: 'Perfil', path: '/perfil', icon: 'User' },
@@ -127,7 +127,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Orçamento', path: '/orcamentos', icon: 'SlidersHorizontal' },
       { label: 'Análise', path: '/analises', icon: 'BarChart3' },
       { label: 'Carteira', path: '/investimentos', icon: 'WalletCards' },
@@ -155,7 +155,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     menu: [
       { label: 'Inicio', path: '/dashboard', icon: 'Home' },
       { label: 'Extrato', path: '/gastos', icon: 'FileText' },
-      { label: 'Previsto', path: '/previsoes', icon: 'CalendarClock' },
+      { label: 'Planejamento', path: '/previsoes', icon: 'CalendarClock' },
       { label: 'Orçamento', path: '/orcamentos', icon: 'SlidersHorizontal' },
       { label: 'Análise', path: '/analises', icon: 'BarChart3' },
       { label: 'Carteira', path: '/investimentos', icon: 'WalletCards' },
@@ -177,25 +177,20 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
 export function getProfileFromScore(score: number): ProfileType {
   if (score <= 3) return 'explorer';
   if (score <= 6) return 'equilibrado';
-  if (score <= 8) return 'construtor';
-  return 'estrategista';
+  return 'construtor';
 }
 
 const PROFILE_ORDER: ProfileType[] = ['explorer', 'equilibrado', 'construtor', 'estrategista', 'mestre'];
 export const XP_PER_LEVEL = 100;
-export const LEVELS_PER_PROFILE = 100;
+export const LEVELS_PER_PROFILE = 1;
 
 export function getProfileRank(profile: ProfileType): number {
   return PROFILE_ORDER.indexOf(profile) + 1;
 }
 
 export function getProfileFromExperience(initialProfile: ProfileType, xp: number): ProfileType {
-  const initialRank = getProfileRank(initialProfile) - 1;
-  const xpPerProfile = XP_PER_LEVEL * LEVELS_PER_PROFILE;
-  const promotedRank = Math.min(PROFILE_ORDER.length - 1, initialRank + Math.floor(xp / xpPerProfile));
-  return PROFILE_ORDER[promotedRank];
+  // A etapa da jornada é determinada por competências, não por volume de XP.
+  // Até a migração completa das competências, preservamos o perfil definido no onboarding.
+  void xp;
+  return initialProfile === 'estrategista' || initialProfile === 'mestre' ? 'construtor' : initialProfile;
 }
-
-
-
-

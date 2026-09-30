@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { Landing } from '@/pages/Landing';
@@ -6,13 +7,8 @@ import { Onboarding } from '@/pages/Onboarding';
 import { Dashboard } from '@/pages/Dashboard';
 import { Transactions } from '@/pages/Transactions';
 import { Goals } from '@/pages/Goals';
-import { Accounts } from '@/pages/Accounts';
-import { Patrimony } from '@/pages/Patrimony';
 import { Learn } from '@/pages/Learn';
-import { Analytics } from '@/pages/Analytics';
-import { Investments } from '@/pages/Investments';
 import { Profile } from '@/pages/Profile';
-import { Forecasts } from '@/pages/Forecasts';
 import { Budgets } from '@/pages/Budgets';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -44,18 +40,17 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={onboarding.completed ? <Navigate to="/dashboard" replace /> : <Landing />} />
-      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/onboarding" element={onboarding.completed ? <Navigate to="/dashboard" replace /> : <Onboarding />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/gastos" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+      <Route path="/planejamento" element={<Navigate to="/orcamentos" replace />} />
       <Route path="/metas" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
-      <Route path="/contas" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
-      <Route path="/patrimonio" element={<ProtectedRoute><Patrimony /></ProtectedRoute>} />
       <Route path="/aprender" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
-      <Route path="/analises" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-      <Route path="/investimentos" element={<ProtectedRoute><Investments /></ProtectedRoute>} />
+      <Route path="/analises" element={<Navigate to="/dashboard" replace />} />
       <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/previsoes" element={<ProtectedRoute><Forecasts /></ProtectedRoute>} />
+      <Route path="/previsoes" element={<Navigate to="/perfil" replace />} />
       <Route path="/orcamentos" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+      <Route path="/investimentos" element={<Navigate to="/perfil" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -63,8 +58,8 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <MotionConfig reducedMotion="user"><HashRouter>
       <AppRoutes />
-    </HashRouter>
+    </HashRouter></MotionConfig>
   );
 }

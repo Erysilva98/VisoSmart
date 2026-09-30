@@ -1,119 +1,73 @@
-import type { ProfileType } from '@/types';
+import { orderedTrail, TRAIL_LESSONS } from './trailLessons';
+import { SIMPLE_LESSONS } from './simpleLessons';
+import type { ProfileType, JourneyPreferences } from '@/types';
 
 export interface Lesson {
-  id: string;
-  titulo: string;
-  descricao: string;
-  duracao: string;
-  xp: number;
-  perfil: ProfileType[] | 'all';
-  conteudo: string;
-  desafio: string;
-  nivel?: number;
-  modulo?: string;
+  question?: { text: string; options: string[]; correct: number; explanation: string };
+  id: string; titulo: string; descricao: string; duracao: string; xp: number;
+  perfil: ProfileType[] | 'all'; conteudo: string; desafio: string; nivel?: number; modulo?: string;
   desafioPratico?: { tipo: string; descricao: string; validacao: string; rota: string };
 }
 
-export const LESSONS: Lesson[] = [
-  {
-    id: 'l1',
-    titulo: 'O que é orçamento pessoal?',
-    descricao: 'Aprenda a base de qualquer vida financeira saudável.',
-    duracao: '3 min',
-    xp: 15,
-    perfil: ['explorer', 'equilibrado'],
-    desafio: 'completar_aula',
-    conteudo: 'Orçamento é o planejamento de quanto você ganha e quanto gasta. O primeiro passo é saber exatamente para onde seu dinheiro vai. Anote tudo por um mês e você já terá mais controle que 90% das pessoas.',
-  },
-  {
-    id: 'l2',
-    titulo: 'Diferença entre necessidade e desejo',
-    descricao: 'Aprenda a identificar gastos impulsivos.',
-    duracao: '4 min',
-    xp: 15,
-    perfil: ['explorer', 'equilibrado'],
-    desafio: 'completar_aula',
-    conteudo: 'Necessidade é algo essencial (alimentação, moradia, saúde). Desejo é algo que melhora sua vida mas não é essencial (lazer, roupas extras). Antes de comprar, pergunte: preciso mesmo disso agora?',
-  },
-  {
-    id: 'l3',
-    titulo: 'Como criar uma reserva de emergência',
-    descricao: 'O primeiro passo para segurança financeira.',
-    duracao: '5 min',
-    xp: 15,
-    perfil: ['equilibrado', 'construtor'],
-    desafio: 'completar_aula',
-    conteudo: 'Reserva de emergência é um valor guardado para imprevistos. O ideal é ter de 3 a 6 meses de despesas guardados. Comece pequeno: guarde R$ 100 por semana e já terá R$ 400 em um mês.',
-  },
-  {
-    id: 'l4',
-    titulo: 'Entendendo investimentos básicos',
-    descricao: 'Renda fixa, Tesouro Direto e os primeiros passos.',
-    duracao: '6 min',
-    xp: 15,
-    perfil: ['construtor', 'estrategista'],
-    desafio: 'completar_aula',
-    conteudo: 'Investir é fazer seu dinheiro trabalhar por você. A renda fixa (Tesouro Direto, CDB) é o ponto de partida: baixo risco e rendimento previsível. Comece com o que sobra do orçamento, mesmo que seja pouco.',
-  },
-  {
-    id: 'l5',
-    titulo: 'Análise de gastos por categoria',
-    descricao: 'Como identificar gargalos no seu orçamento.',
-    duracao: '5 min',
-    xp: 15,
-    perfil: ['construtor', 'estrategista'],
-    desafio: 'completar_aula',
-    conteudo: 'Analise seus gastos por categoria nos últimos 3 meses. Procure categorias que cresceram sem você perceber. Reduzir 10% em uma categoria já gera economia significativa ao longo do ano.',
-  },
-  {
-    id: 'l6',
-    titulo: 'Planejamento financeiro de longo prazo',
-    descricao: 'Metas de 1, 5 e 10 anos.',
-    duracao: '7 min',
-    xp: 15,
-    perfil: ['construtor', 'estrategista'],
-    desafio: 'completar_aula',
-    conteudo: 'Planejamento de longo prazo envolve definir onde quer estar financeiramente em 5 e 10 anos. Divida metas grandes em pequenas. Revise trimestralmente. Ajuste conforme a realidade muda.',
-  },
-  {
-    id: 'l7',
-    titulo: 'Otimização de gastos',
-    descricao: 'Técnicas avançadas para reduzir despesas.',
-    duracao: '6 min',
-    xp: 15,
-    perfil: ['estrategista'],
-    desafio: 'completar_aula',
-    conteudo: 'Otimização vai além de cortar: é renegociar tarifas, trocar serviços por equivalentes mais baratos, agrupar assinaturas. Analise cada despesa recorrente e pergunte: existe forma mais barata de ter o mesmo resultado?',
-  },
-  {
-    id: 'l8',
-    titulo: 'Construindo patrimônio',
-    descricao: 'Diversificação e crescimento de patrimônio.',
-    duracao: '8 min',
-    xp: 15,
-    perfil: ['construtor', 'estrategista'],
-    desafio: 'completar_aula',
-    conteudo: 'Patrimônio é tudo o que você possui. Para crescer: diversifique entre imóveis, investimentos e negócios. Reinvista parte dos ganhos. Tempo e consistência são mais importantes que o valor inicial.',
-  },
-];
-
-export function getLessonsForProfile(profile: ProfileType): Lesson[] {
-  return TRACK_LESSONS.filter((l) => l.perfil === 'all' || l.perfil.includes(profile));
-}
-
-const TRACKS: Record<ProfileType, { modules: string[]; topics: string[]; tasks: { tipo: string; descricao: string; validacao: string; rota: string }[] }> = {
-  explorer: { modules: ['Conhecendo meu dinheiro', 'Consumo consciente', 'Primeiro planejamento'], topics: ['Controle financeiro', 'Para onde meu dinheiro vai', 'Receita x despesa', 'Necessidade e desejo', 'Hábitos financeiros', 'Metas iniciais'], tasks: [{ tipo: 'transacao', descricao: 'Registre uma transação no app.', validacao: 'transacao', rota: '/gastos' }, { tipo: 'categoria', descricao: 'Registre despesas em duas categorias.', validacao: 'categorias', rota: '/gastos' }, { tipo: 'meta', descricao: 'Crie sua primeira meta.', validacao: 'meta', rota: '/metas' }] },
-  equilibrado: { modules: ['Orçamento mensal', 'Organização financeira', 'Reserva e acompanhamento'], topics: ['Orçamento', 'Contas financeiras', 'Reserva financeira', 'Organização mensal', 'Comparação financeira', 'Economia planejada'], tasks: [{ tipo: 'orcamento', descricao: 'Defina um orçamento para uma categoria.', validacao: 'orcamento', rota: '/perfil' }, { tipo: 'conta', descricao: 'Cadastre uma conta com saldo.', validacao: 'conta', rota: '/contas' }, { tipo: 'transacao', descricao: 'Registre uma receita ou despesa.', validacao: 'transacao', rota: '/gastos' }] },
-  construtor: { modules: ['Metas avançadas', 'Patrimônio', 'Investimentos básicos'], topics: ['Metas com prazo', 'Planejamento', 'Patrimônio', 'Investimentos', 'Evolução financeira', 'Diversificação'], tasks: [{ tipo: 'meta', descricao: 'Crie uma meta financeira.', validacao: 'meta', rota: '/metas' }, { tipo: 'ativo', descricao: 'Cadastre um item de patrimônio.', validacao: 'ativo', rota: '/patrimonio' }, { tipo: 'investimento', descricao: 'Cadastre um investimento.', validacao: 'investimento', rota: '/investimentos' }] },
-  estrategista: { modules: ['Análise financeira', 'Otimização', 'Estratégia patrimonial'], topics: ['Indicadores', 'Relatórios', 'Projeções', 'Redução inteligente', 'Investimentos', 'Estratégia'], tasks: [{ tipo: 'transacao', descricao: 'Registre movimentações para análise.', validacao: 'transacao', rota: '/gastos' }, { tipo: 'ativo', descricao: 'Atualize seu patrimônio.', validacao: 'ativo', rota: '/patrimonio' }, { tipo: 'investimento', descricao: 'Registre um investimento.', validacao: 'investimento', rota: '/investimentos' }] },
-  mestre: { modules: ['Auditoria financeira', 'Independência financeira', 'Estratégia de longo prazo'], topics: ['Auditoria', 'Planejamento anual', 'Diversificação', 'Independência', 'Carteira patrimonial', 'Legado financeiro'], tasks: [{ tipo: 'orcamento', descricao: 'Revise um orçamento financeiro.', validacao: 'orcamento', rota: '/perfil' }, { tipo: 'ativo', descricao: 'Atualize seu patrimônio.', validacao: 'ativo', rota: '/patrimonio' }, { tipo: 'meta', descricao: 'Crie uma meta de longo prazo.', validacao: 'meta', rota: '/metas' }] },
+type TaskKey = 'transacao' | 'categorias' | 'meta' | 'orcamento' | 'orcamentos_2' | 'investimento';
+const tasks: Record<TaskKey, { tipo: string; descricao: string; validacao: string; rota: string }> = {
+  transacao: { tipo: 'transacao', descricao: 'Registre uma entrada ou uma despesa real no app.', validacao: 'transacao', rota: '/gastos' },
+  categorias: { tipo: 'categoria', descricao: 'Tenha despesas registradas em pelo menos duas categorias.', validacao: 'categorias', rota: '/gastos' },
+  meta: { tipo: 'meta', descricao: 'Crie uma meta com um objetivo que faça sentido para você.', validacao: 'meta', rota: '/metas' },
+  orcamento: { tipo: 'orcamento', descricao: 'Defina um limite para uma categoria do seu mês.', validacao: 'orcamento', rota: '/orcamentos' },
+  orcamentos_2: { tipo: 'orcamento', descricao: 'Organize pelo menos duas categorias com limites.', validacao: 'orcamentos_2', rota: '/orcamentos' },
+  investimento: { tipo: 'reserva', descricao: 'Inclua um valor para investimentos e economia no seu plano.', validacao: 'investimento', rota: '/orcamentos' },
 };
 
-export const TRACK_LESSONS: Lesson[] = (Object.keys(TRACKS) as ProfileType[]).flatMap((perfil) => Array.from({ length: 30 }, (_, index) => {
-  const track = TRACKS[perfil]; const tier = Math.floor(index / 10); const baseTask = track.tasks[index % track.tasks.length];
-  const topic = track.topics[index % track.topics.length];
-  const task = { ...baseTask, descricao: `${baseTask.descricao} Nesta missão, aplique ${topic.toLowerCase()} na etapa ${index + 1} da sua trilha.` };
-  return { id: `track-${perfil}-${index + 1}`, titulo: `${topic}: passo ${index + 1}`, descricao: `Aplique ${topic.toLowerCase()} à sua realidade financeira.`, duracao: `${3 + tier * 2} min`, xp: 10 + tier * 10, perfil: [perfil], desafio: task.tipo, nivel: tier * 33 + (index % 10) * 3 + 1, modulo: track.modules[tier], conteudo: `Nesta aula você aprende sobre ${topic.toLowerCase()} e transforma o conceito em uma decisão prática dentro do FinEdu Wallet.`, desafioPratico: task };
+type Topic = [title: string, content: string, task: TaskKey];
+const explorer: Topic[] = [
+  ['Para onde vai meu dinheiro?', 'Um lanche aqui, uma passagem ali. Gastos pequenos também fazem parte da sua história. Registrar o que entrou e saiu ajuda a enxergar essa história sem precisar guardar tudo na memória. Comece com uma movimentação de hoje.', 'transacao'],
+  ['Entrada ou saída?', 'Mesada, presente em dinheiro e pagamento por um trabalho são entradas. Compras e pagamentos são saídas. A diferença entre o que entra e o que sai ajuda você a entender quanto ainda tem disponível.', 'transacao'],
+  ['Dê um nome aos seus gastos', 'Categorias juntam gastos parecidos. Alimentação pode incluir o lanche e o almoço; transporte, a passagem. Use a categoria que melhor representa o gasto. O objetivo é reconhecer padrões, não acertar uma classificação perfeita.', 'categorias'],
+  ['Preciso ou quero?', 'Uma necessidade atende algo essencial. Um desejo pode trazer diversão ou conforto. Os dois têm espaço na vida. Antes de comprar, pense no que essa escolha significa para você e se cabe no dinheiro disponível.', 'transacao'],
+  ['Os pequenos valores contam', 'Um gasto frequente pode parecer pequeno sozinho. Olhe seus registros e encontre algo que se repete. Saber quanto ele representa ajuda você a decidir se quer manter esse hábito ou experimentar outra escolha.', 'categorias'],
+  ['Um sonho com nome', 'Uma meta transforma “quero muito” em um objetivo que você consegue acompanhar. Escolha algo seu, dê um nome e estime o valor. Não precisa ser um sonho grande para ser importante.', 'meta'],
+  ['Seu dinheiro, suas prioridades', 'Pessoas diferentes escolhem coisas diferentes. Compare duas categorias do seu extrato e pense: elas combinam com o que importa para mim? Entender suas prioridades ajuda nas próximas decisões.', 'categorias'],
+  ['Uma pausa antes da compra', 'Entre sentir vontade e comprar, existe espaço para pensar. Pergunte se você já tem algo parecido, quando vai usar e como ficará seu saldo. Você continua no controle da escolha.', 'transacao'],
+  ['Guardar tem um motivo', 'Guardar fica mais concreto quando existe um objetivo. Veja sua meta e pense em um próximo passo possível. O valor pode ser pequeno: acompanhar o caminho também faz parte de aprender.', 'meta'],
+  ['Olhe o caminho que você fez', 'Abra seus registros e encontre uma coisa que descobriu sobre si. Pode ser uma categoria frequente ou uma compra que valeu a pena. Revisar é aprender com a própria experiência, sem se julgar.', 'categorias'],
+];
+const equilibrado: Topic[] = [
+  ['Um plano que cabe na sua vida', 'Um orçamento é uma ideia de como você quer usar o dinheiro. Comece por uma categoria que conhece bem e escolha um limite possível. Depois compare o plano com o que realmente aconteceu.', 'orcamento'],
+  ['Organize suas prioridades', 'Separe o que você precisa pagar do que pode escolher. Definir limites para categorias ajuda a visualizar essas prioridades. Seu plano pode mudar quando sua realidade mudar.', 'orcamentos_2'],
+  ['Conheça o dinheiro que entra', 'Uma entrada pode ser regular ou acontecer só uma vez. Registre o valor que de fato recebeu. Assim, você consegue comparar seus planos com o dinheiro disponível, sem depender de expectativas.', 'transacao'],
+  ['Deixe espaço para seus objetivos', 'Uma meta pode fazer parte do seu planejamento do mês. Escolha algo que quer conquistar e acompanhe quanto falta. Pense em passos possíveis dentro da sua realidade.', 'meta'],
+  ['Limites são combinados com você', 'O limite de uma categoria é uma referência para decidir. Se os gastos se aproximarem dele, pare e revise. Talvez você queira mudar uma escolha ou ajustar um plano que ficou irrealista.', 'orcamento'],
+  ['O custo dos hábitos', 'Observe duas categorias do seu extrato. Em qual há gastos frequentes? Nem todo hábito precisa mudar: a ideia é decidir quais trazem valor para você e quais podem ser repensados.', 'categorias'],
+  ['Pense também nos imprevistos', 'Nem tudo acontece como o planejado. Separar espaço para guardar no seu plano ajuda a tornar esse assunto visível. Você escolhe um valor que faça sentido para sua situação.', 'investimento'],
+  ['Compare o plano com a prática', 'Veja os limites que definiu e os gastos registrados. Em quais categorias o plano combinou com a realidade? Ajustar o próximo mês com base nisso é uma forma de aprender.', 'orcamentos_2'],
+  ['Planejar também é escolher', 'Duas coisas podem ser importantes, mas ter prazos diferentes. Olhe sua meta e decida qual pequeno passo cabe agora. Um plano útil respeita suas prioridades e suas possibilidades.', 'meta'],
+  ['Sua revisão do mês', 'Reserve um momento para olhar entradas, saídas e limites. Escolha apenas um ajuste para experimentar no próximo mês. Você não precisa mudar tudo de uma vez.', 'orcamento'],
+];
+const expert: Topic[] = [
+  ['Transforme dados em escolhas', 'Seu histórico conta como você usa o dinheiro. Compare categorias e procure um padrão que ajude em uma decisão concreta. Dados são úteis quando respondem a uma pergunta sua.', 'categorias'],
+  ['Um objetivo, vários passos', 'Dividir um objetivo em partes torna o caminho mais visível. Defina uma meta com valor e prazo e acompanhe o progresso. Revise o plano quando sua realidade mudar.', 'meta'],
+  ['Planeje com o que você conhece', 'Use os registros anteriores como referência para um limite. Lembre que um mês diferente pode exigir um plano diferente. O histórico orienta, mas não prevê tudo.', 'orcamento'],
+  ['Compare sem se comparar', 'Seu progresso não precisa seguir o ritmo de outra pessoa. Compare seus próprios hábitos e planos ao longo do tempo. Uma decisão mais consciente já é uma descoberta importante.', 'categorias'],
+  ['Objetivos que fazem sentido', 'Revisite uma meta e pergunte se ela ainda representa algo importante. Mudar de ideia também faz parte de planejar. O plano deve ajudar sua vida, não virar uma obrigação sem sentido.', 'meta'],
+  ['Espaço para o futuro', 'No seu plano, diferencie o dinheiro para usar agora do que quer guardar. Dar um lugar a cada intenção ajuda a pensar no presente e no futuro com mais clareza.', 'investimento'],
+  ['Cenários são possibilidades', 'Pergunte como seu plano mudaria se entrasse menos dinheiro ou surgisse uma despesa. Ajuste os limites para explorar uma possibilidade. Um cenário é um exercício, não uma previsão.', 'orcamentos_2'],
+  ['Antes de investir, entenda', 'Produtos financeiros têm regras, custos e riscos diferentes. Entender seu objetivo é parte do aprendizado. Nesta etapa, apenas organize no seu plano a intenção de guardar; não é preciso contratar nenhum produto.', 'investimento'],
+  ['Consistência com flexibilidade', 'Um plano útil permite revisões. Veja o que funcionou nas categorias que acompanha e o que precisa mudar. Retomar depois de uma pausa também faz parte de construir um hábito.', 'orcamentos_2'],
+  ['Sua próxima decisão consciente', 'Escolha uma descoberta do seu histórico e transforme em uma ação pequena: revisar um limite, acompanhar uma meta ou registrar algo que faltou. Aprender ganha sentido na prática.', 'meta'],
+];
+const tracks: Record<ProfileType, Topic[]> = { explorer, equilibrado, construtor: expert, estrategista: expert, mestre: expert };
+const modules = ['Descobrir', 'Colocar em prática', 'Criar consistência'];
+
+// Mantém os IDs e as 30 etapas existentes para preservar o progresso salvo.
+export const TRACK_LESSONS: Lesson[] = (Object.keys(tracks) as ProfileType[]).flatMap((profile) => Array.from({ length: 30 }, (_, index) => {
+  const tier = Math.floor(index / 10);
+  const [title, content, task] = tracks[profile][index % 10];
+  const reflection = tier === 1 ? '\n\nAgora, aplique a ideia à sua semana. Observe um exemplo do seu próprio histórico e pense em uma escolha que faria hoje.' : tier === 2 ? '\n\nHora de revisar: o que mudou desde a primeira vez que você pensou nisso? Use seus registros para reconhecer um hábito que quer manter.' : '';
+  return { id: `track-${profile}-${index + 1}`, titulo: title, descricao: `Uma descoberta para o seu dia a dia.`, duracao: `${3 + tier} min`, xp: 10 + tier * 10, perfil: [profile], desafio: task, nivel: tier * 33 + (index % 10) * 3 + 1, modulo: modules[tier], conteudo: content + reflection, desafioPratico: tasks[task] };
 }));
 
-export function getLessonById(id: string): Lesson | undefined { return [...LESSONS, ...TRACK_LESSONS].find((lesson) => lesson.id === id); }
+const legacyTopics: Topic[] = [explorer[0], explorer[3], equilibrado[6], expert[7], expert[0], expert[1], equilibrado[4], expert[4]];
+export const LESSONS: Lesson[] = legacyTopics.map(([title, content, task], index) => ({ id: `l${index + 1}`, titulo: title, descricao: title, duracao: '3 min', xp: 15, perfil: 'all', conteudo: content, desafio: task, desafioPratico: tasks[task] }));
+export function getLessonsForProfile(profile: ProfileType, focus?: JourneyPreferences['focus']): Lesson[] { return orderedTrail(profile, focus); }
+export function getLessonById(id: string): Lesson | undefined { return [...TRAIL_LESSONS, ...SIMPLE_LESSONS, ...LESSONS, ...TRACK_LESSONS].find((lesson) => lesson.id === id); }

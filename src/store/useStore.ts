@@ -1,14 +1,17 @@
+import { syncCategories } from '@/data/categories';
+import { localDateTime, withInitialBalance } from '@/lib/personalization';
+import { monthlyMissions } from '@/lib/journeyMissions';
 import { create } from 'zustand';
 import type {
-  AppState, Transaction, Goal, Account, Asset, Challenge,
-  ProfileType, Budget, LessonProgress, CategoryId, Transfer, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
+  AppState, CategoryDefinition, Transaction, Goal, Investment, JourneyPreferences, LearningAction,
+  Budget, LessonProgress, CategoryId, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
 } from '@/types';
 import { clearState, loadState, requestPersistentStorage, saveState } from '@/lib/db';
-import { getProfileFromExperience, getProfileFromScore, getProfileRank } from '@/data/profiles';
-import { generateChallengesForProfile, getCurrentMonthKey } from '@/data/challenges';
+import { getProfileFromExperience, getProfileFromScore } from '@/data/profiles';
+import { getCurrentMonthKey } from '@/data/challenges';
 import { canCompleteChallenge, canCompleteLesson } from '@/lib/progress';
-import { getLevel } from '@/lib/analytics';
-import { getLessonById } from '@/data/lessons';
+import { getLessonById, getLessonsForProfile } from '@/data/lessons';
+import { recordedMoney } from '@/lib/financialSummary';
 import { isCardExpenseDue } from '@/lib/forecast';
 
 const DEFAULT_CARDS = ['saldo', 'entradas_saidas', 'gastos_categoria', 'score', 'metas'];
@@ -18,14 +21,11 @@ function initialState(): AppState {
     onboarding: { completed: false, score: 0, profile: null, initialProfile: null },
     transactions: [],
     goals: [],
-    accounts: [],
-    assets: [],
+    investments: [],
     challenges: [],
     challengeHistory: [],
     lessonProgress: [],
     budgets: [],
-    investmentGoal: 0,
-    transfers: [],
     plannedExpenses: [],
     creditCards: [],
     creditCardExpenses: [],
@@ -36,26 +36,29 @@ function initialState(): AppState {
 }
 
 interface StoreActions {
+  saveCategoryPreferences: (definitions: CategoryDefinition[], preferences: JourneyPreferences) => void;
   init: () => Promise<void>;
-  completeOnboarding: (score: number) => void;
-  addTransaction: (t: Omit<Transaction, 'id'>) => void;
+  completeOnboarding: (score: number, preferences?: JourneyPreferences) => void;
+  updatePreferences: (preferences: JourneyPreferences) => void;
+  recordLearningAction: (action: LearningAction) => void;
+  addTransaction: (t: Omit<Transaction, 'id'>) => string;
+  restoreTransaction: (transaction: Transaction) => void;
+  setMoneyContext: (openingBalance: number, incomePattern: 'regular' | 'irregular') => void;
+  updateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
   deleteTransaction: (id: string) => void;
   addGoal: (g: Omit<Goal, 'id' | 'criadaEm' | 'valorAtual'>) => void;
   updateGoal: (id: string, valorAtual: number) => void;
   deleteGoal: (id: string) => void;
-  addAccount: (a: Omit<Account, 'id'>) => void;
-  updateAccountBalance: (id: string, newSaldo: number) => void;
-  deleteAccount: (id: string) => void;
-  addAsset: (a: Omit<Asset, 'id'>) => void;
-  deleteAsset: (id: string) => void;
-  addInvestment: (nome: string, valor: number) => void;
-  transferBetweenAccounts: (origemId: string, destinoId: string, valor: number, descricao?: string) => void;
+  reorderGoals: (goals: Goal[]) => void;
+  addInvestment: (investment: Omit<Investment, 'id' | 'criadoEm'>) => void;
+  updateInvestment: (id: string, investment: Partial<Investment>) => void;
+  deleteInvestment: (id: string) => void;
   addXp: (amount: number) => void;
   completeChallenge: (id: string) => void;
-  completeLesson: (lessonId: string) => void;
+  completeLesson: (lessonId: string, answer?: number) => void;
+  reviewLesson: (lessonId: string, answer: number) => void;
   setBudget: (categoria: CategoryId, limite: number) => void;
   deleteBudget: (categoria: CategoryId) => void;
-  setInvestmentGoal: (valor: number) => void;
   addPlannedExpense: (item: Omit<PlannedExpense, 'id' | 'pagamentos' | 'status'>) => void;
   updatePlannedExpense: (id: string, item: Partial<PlannedExpense>) => void;
   deletePlannedExpense: (id: string) => void;
@@ -96,12 +99,22 @@ function updateProfileFromExperience(onboarding: OnboardingState, xp: number): O
 
 export const useStore = create<Store>((set, get) => ({
   ...initialState(),
+  saveCategoryPreferences: (categoryDefinitions, preferences) => {
+    syncCategories(categoryDefinitions);
+    set({ categoryDefinitions, preferences });
+    get()._persist();
+  },
 
   init: async () => {
     void requestPersistentStorage();
     const saved = await loadState();
     if (saved) {
       const merged = { ...initialState(), ...saved };
+      if ((merged.openingBalance ?? 0) > 0) {
+        const earliest = [...merged.transactions].sort((a, b) => a.data.localeCompare(b.data))[0]?.data ?? localDateTime();
+        merged.transactions = withInitialBalance(merged.transactions, merged.transactions.find((item) => item.origem === 'saldo_inicial')?.valor ?? merged.openingBalance!, earliest);
+        merged.openingBalance = 0;
+      }
       merged.plannedExpenses = merged.plannedExpenses.map((expense) => ({ ...expense, pagamentos: expense.pagamentos ?? [], status: expense.status ?? 'ativo' }));
       const currentMonth = getCurrentMonthKey();
       merged.challenges = merged.challenges.filter((challenge) => !(challenge.mes === currentMonth && (challenge.teste || !challenge.nivelMinimo)));
@@ -111,29 +124,55 @@ export const useStore = create<Store>((set, get) => ({
         if (!merged.cardOrder.includes(cardId)) merged.cardOrder.push(cardId);
       }
       merged.onboarding = updateProfileFromExperience(merged.onboarding, merged.xp);
+      // Perfis legados avançados passam a fazer parte da etapa Planejador.
+      if (merged.onboarding.profile === 'estrategista' || merged.onboarding.profile === 'mestre') {
+        merged.onboarding.profile = 'construtor';
+      }
+      if (merged.onboarding.initialProfile === 'estrategista' || merged.onboarding.initialProfile === 'mestre') {
+        merged.onboarding.initialProfile = 'construtor';
+      }
+      syncCategories(merged.categoryDefinitions);
       set({ ...merged });
       get()._ensureMonthlyChallenges();
     }
   },
 
-  completeOnboarding: (score) => {
+  completeOnboarding: (score, preferences) => {
     const profile = getProfileFromScore(score);
-    const monthKey = getCurrentMonthKey();
-    const challenges = generateChallengesForProfile(profile, monthKey);
-    set((s) => ({
-      onboarding: { completed: true, score, profile, initialProfile: profile },
-      challenges,
-      challengeHistory: challenges.filter((challenge) => !challenge.teste).map((challenge) => ({ templateId: challenge.id.replace(`_${monthKey}`, ''), perfil: profile, mes: monthKey })),
-    }));
+    set((s) => ({ onboarding: { completed: true, score, profile, initialProfile: profile }, preferences: preferences ?? s.preferences }));
+    get()._ensureMonthlyChallenges();
+    get()._persist();
+  },
+  updatePreferences: (preferences) => {
+    set({ preferences });
+    get()._persist();
+  },
+  recordLearningAction: (action) => {
+    const date = localDateTime();
+    if (get().learningActions?.[action] === date) return;
+    set((s) => ({ learningActions: { ...s.learningActions, [action]: date } }));
     get()._persist();
   },
 
   addTransaction: (t) => {
     const transaction: Transaction = { ...t, id: uid() };
-    set((s) => {
-      const xp = s.xp + 5;
-      return { transactions: [transaction, ...s.transactions], xp, onboarding: updateProfileFromExperience(s.onboarding, xp) };
-    });
+    set((s) => ({ transactions: [transaction, ...s.transactions] }));
+    get()._persist();
+    return transaction.id;
+  },
+  restoreTransaction: (transaction) => {
+    set((s) => s.transactions.some((item) => item.id === transaction.id) ? s : { transactions: [transaction, ...s.transactions] });
+    get()._persist();
+  },
+  setMoneyContext: (openingBalance, incomePattern) => {
+    if (!Number.isFinite(openingBalance) || openingBalance < 0) return;
+    set((s) => ({ openingBalance: 0, incomePattern, transactions: withInitialBalance(s.transactions, openingBalance, localDateTime()) }));
+    get()._persist();
+  },
+
+  // Edição preserva o identificador para manter filtros, desafios e histórico consistentes.
+  updateTransaction: (id, transaction) => {
+    set((s) => ({ transactions: s.transactions.map((item) => item.id === id ? { ...transaction, id } : item) }));
     get()._ensureMonthlyChallenges();
     get()._persist();
   },
@@ -144,80 +183,65 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   addGoal: (g) => {
-    const goal: Goal = { ...g, id: uid(), criadaEm: new Date().toISOString(), valorAtual: 0 };
+    const goalId = uid();
+    const investmentId = uid();
+    const goal: Goal = { ...g, id: goalId, investimentoId: investmentId, criadaEm: new Date().toISOString(), valorAtual: 0 };
+    const investment: Investment = { id: investmentId, nome: goal.titulo, valor: 0, criadoEm: goal.criadaEm, tipo: 'reserva', considerarDisponivel: false, metaId: goalId, icone: goal.icone };
     set((s) => {
-      const xp = s.xp + 30;
-      return { goals: [...s.goals, goal], xp, onboarding: updateProfileFromExperience(s.onboarding, xp) };
+      return { goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)), investments: [...s.investments, investment] };
     });
+    get().recordLearningAction('goal');
     get()._ensureMonthlyChallenges();
     get()._persist();
   },
 
   updateGoal: (id, valorAtual) => {
-    set((s) => ({
-      goals: s.goals.map((g) => (g.id === id ? { ...g, valorAtual } : g)),
-    }));
+    set((s) => {
+      const goal = s.goals.find((item) => item.id === id);
+      if (!goal || !Number.isFinite(valorAtual) || valorAtual < 0 || valorAtual > goal.valorAlvo) return s;
+      const increase = Math.round((valorAtual - goal.valorAtual) * 100) / 100;
+      if (increase > 0 && increase > recordedMoney(s.transactions, s.goals, s.openingBalance).available) return s;
+      return {
+        goals: s.goals.map((g) => (g.id === id ? { ...g, valorAtual } : g)),
+        investments: goal?.investimentoId ? s.investments.map((item) => item.id === goal.investimentoId ? { ...item, valor: valorAtual } : item) : s.investments,
+      };
+    });
+    if (get().goals.find((item) => item.id === id)?.valorAtual === valorAtual) get().recordLearningAction('goal');
     get()._persist();
   },
 
   deleteGoal: (id) => {
-    set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
+    set((s) => ({ goals: s.goals.filter((g) => g.id !== id), investments: s.investments.filter((item) => item.metaId !== id) }));
     get()._persist();
   },
 
-  addAccount: (a) => {
-    const account: Account = { ...a, id: uid() };
-    set((s) => ({ accounts: [...s.accounts, account] }));
+  reorderGoals: (goals) => {
+    set({ goals });
     get()._persist();
   },
 
-  updateAccountBalance: (id, newSaldo) => {
-    set((s) => ({
-      accounts: s.accounts.map((a) => (a.id === id ? { ...a, saldo: newSaldo } : a)),
-    }));
+  addInvestment: (investment) => {
+    const item: Investment = { ...investment, id: uid(), criadoEm: new Date().toISOString() };
+    set((s) => ({ investments: [item, ...s.investments] }));
     get()._persist();
   },
 
-  deleteAccount: (id) => {
-    set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) }));
+  updateInvestment: (id, investment) => {
+    set((s) => {
+      const current = s.investments.find((item) => item.id === id);
+      return {
+        investments: s.investments.map((item) => item.id === id ? { ...item, ...investment } : item),
+        goals: current?.metaId && typeof investment.valor === 'number' ? s.goals.map((goal) => goal.id === current.metaId ? { ...goal, valorAtual: investment.valor as number } : goal) : s.goals,
+      };
+    });
     get()._persist();
   },
 
-  addAsset: (a) => {
-    const asset: Asset = { ...a, id: uid() };
-    set((s) => ({ assets: [...s.assets, asset] }));
-    get()._persist();
-  },
-
-  deleteAsset: (id) => {
-    set((s) => ({ assets: s.assets.filter((a) => a.id !== id) }));
-    get()._persist();
-  },
-
-  addInvestment: (nome, valor) => {
-    const asset: Asset = { id: uid(), nome, tipo: 'investimento', valor };
-    set((s) => ({ assets: [...s.assets, asset] }));
-    get()._persist();
-  },
-
-  transferBetweenAccounts: (origemId, destinoId, valor, descricao) => {
-    if (origemId === destinoId || valor <= 0) return;
-    const transfer: Transfer = {
-      id: uid(),
-      contaOrigemId: origemId,
-      contaDestinoId: destinoId,
-      valor,
-      data: new Date().toISOString(),
-      descricao,
-    };
-    set((s) => ({
-      transfers: [transfer, ...s.transfers],
-      accounts: s.accounts.map((a) => {
-        if (a.id === origemId) return { ...a, saldo: a.saldo - valor };
-        if (a.id === destinoId) return { ...a, saldo: a.saldo + valor };
-        return a;
-      }),
-    }));
+  deleteInvestment: (id) => {
+    set((s) => {
+      const current = s.investments.find((item) => item.id === id);
+      return { investments: s.investments.filter((item) => item.id !== id), goals: current?.metaId ? s.goals.filter((goal) => goal.id !== current.metaId) : s.goals };
+    });
     get()._persist();
   },
 
@@ -247,14 +271,28 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
 
-  completeLesson: (lessonId) => {
+  reviewLesson: (lessonId, answer) => {
+    const state = get();
+    const lesson = getLessonById(lessonId);
+    if (!lesson?.question || lesson.question.correct !== answer || !state.lessonProgress.some((item) => item.lessonId === lessonId && item.concluido)) return;
+    set((s) => ({ lessonReviews: { ...s.lessonReviews, [lessonId]: localDateTime() } }));
+    get()._persist();
+  },
+
+  completeLesson: (lessonId, answer) => {
     set((s) => {
+      const lesson = getLessonById(lessonId);
+      if (lessonId.startsWith('trail-')) {
+        const next = getLessonsForProfile(s.onboarding.profile ?? 'explorer', s.preferences?.focus).find((item) => !s.lessonProgress.some((entry) => entry.lessonId === item.id && entry.concluido));
+        if (next?.id !== lessonId) return s;
+      }
+      if (lesson?.question && answer !== lesson.question.correct) return s;
       const existing = s.lessonProgress.find((l) => l.lessonId === lessonId);
       if (existing?.concluido || !canCompleteLesson(lessonId, s)) return s;
       const progress: LessonProgress = {
         lessonId,
         concluido: true,
-        concluidoEm: new Date().toISOString(),
+        concluidoEm: localDateTime(),
       };
       const xp = s.xp + (getLessonById(lessonId)?.xp ?? 15);
       return {
@@ -289,7 +327,6 @@ export const useStore = create<Store>((set, get) => ({
       const expense = s.plannedExpenses.find((item) => item.id === id);
       const paymentKey = date.slice(0, 10);
       if (!expense || (expense.pagamentos ?? []).includes(paymentKey)) return s;
-      const month = date.slice(0, 7);
       const paymentDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T12:00:00` : date;
       const parcelada = expense.recorrencia === 'parcelada';
       const nextInstallment = (expense.parcelaAtual ?? 1) + (parcelada ? 1 : 0);
@@ -327,16 +364,12 @@ export const useStore = create<Store>((set, get) => ({
           : [...s.budgets, budget],
       };
     });
+    get().recordLearningAction('budget');
     get()._persist();
   },
 
   deleteBudget: (categoria) => {
     set((s) => ({ budgets: s.budgets.filter((budget) => budget.categoria !== categoria) }));
-    get()._persist();
-  },
-
-  setInvestmentGoal: (valor) => {
-    set({ investmentGoal: Math.max(0, valor) });
     get()._persist();
   },
 
@@ -362,42 +395,25 @@ export const useStore = create<Store>((set, get) => ({
       clearTimeout(saveTimer);
       saveTimer = null;
     }
-    set({ ...initialState() });
+    syncCategories();
+    set({ ...initialState(), categoryDefinitions: [], preferences: undefined, openingBalance: undefined, incomePattern: undefined, learningActions: undefined, lessonReviews: undefined });
     await clearState();
   },
 
   _persist: () => {
     const state = get();
-    const { init: _init, completeOnboarding: _co, addTransaction: _at, deleteTransaction: _dt,
-      addGoal: _ag, updateGoal: _ug, deleteGoal: _dg, addAccount: _aa, updateAccountBalance: _uab,
-      deleteAccount: _da, addAsset: _as, deleteAsset: _dsa, addInvestment: _ai,
-      transferBetweenAccounts: _tba, addXp: _ax, completeChallenge: _cc,
-      completeLesson: _cl, setBudget: _sb, deleteBudget: _db, setInvestmentGoal: _sig, addPlannedExpense: _ape, updatePlannedExpense: _upe, deletePlannedExpense: _dpe, payPlannedExpense: _ppe,
-      addCreditCard: _acc, updateCreditCard: _ucc, deleteCreditCard: _dcc, addCreditCardExpense: _acce, deleteCreditCardExpense: _dcce, payCreditCardInvoice: _pcci, toggleCard: _tc, reorderCards: _rc,
-      resetApp: _ra, _persist: _p, _ensureMonthlyChallenges: _emc,
-      ...rest
-    } = state;
-    void _init; void _co; void _at; void _dt; void _ag; void _ug; void _dg;
-    void _aa; void _uab; void _da; void _as; void _dsa; void _ai; void _tba;
-    void _ax; void _cc; void _cl; void _sb; void _db; void _sig; void _ape; void _upe; void _dpe; void _ppe; void _acc; void _ucc; void _dcc; void _acce; void _dcce; void _pcci; void _tc; void _rc; void _ra;
-    void _p; void _emc;
-    scheduleSave(rest as AppState);
+    const data = Object.fromEntries(Object.entries(state).filter(([, value]) => typeof value !== 'function'));
+    scheduleSave(data as unknown as AppState);
   },
 
   _ensureMonthlyChallenges: () => {
     const s = get();
     if (!s.onboarding.profile) return;
     const monthKey = getCurrentMonthKey();
-    const currentChallenges = s.challenges.filter((challenge) => challenge.mes === monthKey && challenge.perfil === s.onboarding.profile && !challenge.teste);
-    if (currentChallenges.length === 4) return;
-    const profileRank = getProfileRank(s.onboarding.profile);
-    const initialRank = s.onboarding.initialProfile ? getProfileRank(s.onboarding.initialProfile) : profileRank;
-    const level = getLevel(s.xp, profileRank, initialRank).level;
-    const newChallenges = generateChallengesForProfile(s.onboarding.profile, monthKey, level, s.challengeHistory);
-    if (newChallenges.length === 4) {
-      const history = [...s.challengeHistory, ...newChallenges.filter((challenge) => !challenge.teste).map((challenge) => ({ templateId: challenge.id.replace(`_${monthKey}`, ''), perfil: challenge.perfil, mes: monthKey }))];
-      set({ challenges: [...s.challenges, ...newChallenges], challengeHistory: history });
-      get()._persist();
-    }
+    const current = s.challenges.filter((item) => item.id.startsWith('journey-') && item.mes === monthKey);
+    if (current.length === 4) return;
+    const next = monthlyMissions(s.onboarding.profile, monthKey, s.preferences?.focus).map((item) => current.find((old) => old.id === item.id) ?? item);
+    set({ challenges: [...s.challenges.filter((item) => !(item.id.startsWith('journey-') && item.mes === monthKey)), ...next] });
+    get()._persist();
   },
 }));

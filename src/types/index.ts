@@ -3,6 +3,9 @@ export type ProfileType = 'explorer' | 'equilibrado' | 'construtor' | 'estrategi
 export type TransactionType = 'receita' | 'despesa';
 
 export type CategoryId =
+  | `custom_${string}`
+  | 'saldo_inicial'
+  | 'mesada' | 'estagio' | 'bolsa' | 'freelas' | 'presentes' | 'compras' | 'assinaturas' | 'jogos'
   | 'alimentacao'
   | 'transporte'
   | 'moradia'
@@ -11,6 +14,8 @@ export type CategoryId =
   | 'educacao'
   | 'cartao_credito'
   | 'investimentos_economia'
+  | 'mercado'
+  | 'celular'
   | 'salario'
   | 'outros';
 
@@ -21,7 +26,7 @@ export interface Transaction {
   categoria: CategoryId;
   data: string; // ISO date string
   descricao?: string;
-  origem?: 'divida' | 'prevista' | 'cartao' | 'fixa' | 'recorrente';
+  origem?: 'saldo_inicial' | 'divida' | 'prevista' | 'cartao' | 'fixa' | 'recorrente';
 }
 
 export type PlannedExpenseType = 'divida' | 'fixa' | 'recorrente' | 'avulsa' | 'outro';
@@ -76,24 +81,27 @@ export interface Goal {
   titulo: string;
   valorAlvo: number;
   valorAtual: number;
+  /** Ícone escolhido para representar visualmente o objetivo. */
+  icone?: string;
+  /** Item correspondente criado na Carteira para receber os aportes. */
+  investimentoId?: string;
   categoria?: CategoryId;
   prazo?: string;
+  meses?: number;
   criadaEm: string;
 }
 
-export interface Account {
+/** Registro independente da Carteira; não representa bens ou patrimônio. */
+export interface Investment {
   id: string;
   nome: string;
-  tipo: 'conta_corrente' | 'poupanca' | 'cartao' | 'dinheiro';
-  saldo: number;
-  cor: string;
-}
-
-export interface Asset {
-  id: string;
-  nome: string;
-  tipo: 'imovel' | 'investimento' | 'veiculo' | 'outro';
   valor: number;
+  criadoEm: string;
+  tipo?: 'disponivel' | 'reserva' | 'investimento';
+  considerarDisponivel?: boolean;
+  /** Meta associada: permanece protegida e fora do saldo disponível. */
+  metaId?: string;
+  icone?: string;
 }
 
 export interface Challenge {
@@ -134,27 +142,29 @@ export interface Budget {
   limite: number;
 }
 
-export interface Transfer {
-  id: string;
-  contaOrigemId: string;
-  contaDestinoId: string;
-  valor: number;
-  data: string;
-  descricao?: string;
+export interface JourneyPreferences {
+  experience: 0 | 1 | 2;
+  incomeCategories: CategoryId[];
+  expenseCategories: CategoryId[];
+  focus: 'understand' | 'organize' | 'save';
 }
+export type LearningAction = 'filter' | 'calendar' | 'budget' | 'goal';
 
 export interface AppState {
+  categoryDefinitions?: CategoryDefinition[];
+  lessonReviews?: Record<string, string>;
+  preferences?: JourneyPreferences;
+  learningActions?: Partial<Record<LearningAction, string>>;
+  openingBalance?: number;
+  incomePattern?: 'regular' | 'irregular';
   onboarding: OnboardingState;
   transactions: Transaction[];
   goals: Goal[];
-  accounts: Account[];
-  assets: Asset[];
+  investments: Investment[];
   challenges: Challenge[];
   challengeHistory: ChallengeHistoryEntry[];
   lessonProgress: LessonProgress[];
   budgets: Budget[];
-  investmentGoal: number;
-  transfers: Transfer[];
   plannedExpenses: PlannedExpense[];
   creditCards: CreditCard[];
   creditCardExpenses: CreditCardExpense[];
@@ -162,3 +172,5 @@ export interface AppState {
   cardOrder: string[];
   disabledCards: string[];
 }
+
+export interface CategoryDefinition { id: CategoryId; nome: string; icon: string; cor: string; tipo: TransactionType | "ambos" | "objetivo"; }

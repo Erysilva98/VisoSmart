@@ -7,7 +7,7 @@ export function getSaldo(transactions: Transaction[]): number {
 
 export function getReceitasMes(transactions: Transaction[], ref: Date = new Date()): number {
   return transactions
-    .filter((t) => t.tipo === 'receita' && isSameMonth(t.data, ref))
+    .filter((t) => t.tipo === 'receita' && t.origem !== 'saldo_inicial' && isSameMonth(t.data, ref))
     .reduce((acc, t) => acc + t.valor, 0);
 }
 
@@ -146,11 +146,6 @@ export function getComparacaoMensal(transactions: Transaction[]): { mes: string;
   return result;
 }
 
-export function getPatrimonio(transactions: Transaction[], assets: { valor: number }[]): number {
-  const saldo = getSaldo(transactions);
-  const assetTotal = assets.reduce((acc, a) => acc + a.valor, 0);
-  return saldo + assetTotal;
-}
 
 export function getLevel(
   xp: number,

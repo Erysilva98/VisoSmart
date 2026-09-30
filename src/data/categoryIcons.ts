@@ -1,0 +1,3 @@
+import { Wallet, UtensilsCrossed, BusFront, Home, PartyPopper, HeartPulse, BookOpen, CreditCard, PiggyBank, Banknote, CircleDot, HandCoins, BriefcaseBusiness, GraduationCap, Laptop, Gift, ShoppingBag, PlaySquare, Gamepad2, ShoppingBasket, Smartphone } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+export const CATEGORY_ICONS: Record<string, LucideIcon> = { Wallet, UtensilsCrossed, BusFront, Home, PartyPopper, HeartPulse, BookOpen, CreditCard, PiggyBank, Banknote, CircleDot, HandCoins, BriefcaseBusiness, GraduationCap, Laptop, Gift, ShoppingBag, PlaySquare, Gamepad2, ShoppingBasket, Smartphone };

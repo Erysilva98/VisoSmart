@@ -13,7 +13,7 @@ export default defineConfig({
       strategies: 'generateSW',
       injectRegister: false,
       manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.ico', 'brand/nexo-favicon-v2.svg', 'brand/nexo-apple-touch-v2.png'],
       manifest: {
         id: './',
         lang: 'pt-BR',
@@ -23,44 +23,43 @@ export default defineConfig({
         launch_handler: {
           client_mode: 'navigate-existing',
         },
-        name: 'FinEdu Wallet',
-        short_name: 'FinEdu',
-        description: 'Seu personal trainer financeiro. Entenda seu dinheiro, crie melhores hábitos, evolua financeiramente.',
-        theme_color: '#16a34a',
-        background_color: '#ffffff',
+        name: 'Nexo',
+        short_name: 'Nexo',
+        description: 'Pequenos passos, grandes conquistas. Aprenda. Organize. Evolua.',
+        theme_color: '#111936',
+        background_color: '#111936',
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         orientation: 'any',
         start_url: './',
         scope: './',
-        screenshots: [
-          {
-            src: 'screenshot-dashboard.png',
-            sizes: '941x1672',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'Painel financeiro do FinEdu Wallet',
-          },
-        ],
         shortcuts: [
           {
             name: 'Abrir painel',
             short_name: 'Painel',
-            description: 'Abrir o painel financeiro do FinEdu Wallet',
+            description: 'Abrir o painel financeiro do Nexo',
             url: './',
-            icons: [{ src: 'icon-wallet.png', sizes: '1254x1254', type: 'image/png' }],
+            icons: [
+          { src: 'brand/nexo-trail-48-v3.png', sizes: '48x48', type: 'image/png', purpose: 'any' },
+          { src: 'brand/nexo-trail-96-v3.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
+          { src: 'brand/nexo-trail-128-v3.png', sizes: '128x128', type: 'image/png', purpose: 'any' },
+          { src: 'brand/nexo-trail-192-v2.png', sizes: '192x192', type: 'image/png', purpose: 'any' },{ src: 'brand/nexo-trail-512-v2.png', sizes: '512x512', type: 'image/png' }],
           },
         ],
         icons: [
+          { src: 'brand/nexo-trail-48-v3.png', sizes: '48x48', type: 'image/png', purpose: 'any' },
+          { src: 'brand/nexo-trail-96-v3.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
+          { src: 'brand/nexo-trail-128-v3.png', sizes: '128x128', type: 'image/png', purpose: 'any' },
+          { src: 'brand/nexo-trail-192-v2.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           {
-            src: 'icon-wallet.png',
-            sizes: '1254x1254',
+            src: 'brand/nexo-trail-512-v2.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'icon-wallet.png',
-            sizes: '1254x1254',
+            src: 'brand/nexo-trail-maskable-v2.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
@@ -68,6 +67,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest,json}'],
+        globIgnores: ['**/screenshot-dashboard.png'],
         navigateFallback: 'index.html',
         clientsClaim: true,
         skipWaiting: true,
@@ -91,6 +91,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
+          if (id.includes('jspdf')) return 'pdf';
+          if (id.includes('html2canvas')) return 'pdf-canvas';
+          if (id.includes('canvg')) return 'pdf-svg';
           if (id.includes('recharts') || id.includes('/d3-')) return 'charts';
           if (id.includes('lucide-react')) return 'icons';
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';

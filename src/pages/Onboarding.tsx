@@ -1,163 +1,46 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
-import { QUESTIONS } from '@/data/questions';
+import { Brand } from '@/components/journey/Journey';
+import { ProfileMark } from '@/components/journey/NexoMark';
+import { CategoryPreferences } from '@/components/ui/CategoryPreferences';
 import { useStore } from '@/store/useStore';
-import { PROFILES, getProfileFromScore } from '@/data/profiles';
-import * as Icons from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { parseAmount } from '@/lib/money';
+import { FOCUS_LABELS, initialBalanceValue, profileForExperience } from '@/lib/personalization';
+import { DESPESA_CATEGORIES, RECEITA_CATEGORIES } from '@/data/categories';
+import { PROFILES } from '@/data/profiles';
+import type { CategoryId, JourneyPreferences } from '@/types';
 
+const TITLES = ['Como você cuida do seu dinheiro hoje?', 'De onde vem seu dinheiro?', 'Em que você costuma gastar?', 'O que você mais quer melhorar agora?', 'Quanto você tem para começar?'];
 export function Onboarding() {
+  const state = useStore();
   const navigate = useNavigate();
-  const completeOnboarding = useStore((s) => s.completeOnboarding);
-  const [currentQ, setCurrentQ] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [showResult, setShowResult] = useState(false);
-
-  const totalQuestions = QUESTIONS.length;
-  const progress = ((currentQ + (showResult ? 1 : 0)) / (totalQuestions + 1)) * 100;
-  const score = answers.reduce((acc, p) => acc + p, 0);
-  const profile = getProfileFromScore(score);
-
-  function selectAnswer(points: number) {
-    const newAnswers = [...answers];
-    newAnswers[currentQ] = points;
-    setAnswers(newAnswers);
-    if (currentQ < totalQuestions - 1) {
-      setTimeout(() => setCurrentQ((q) => q + 1), 250);
-    } else {
-      setTimeout(() => setShowResult(true), 250);
-    }
-  }
-
+  const [step, setStep] = useState(0);
+  const [experience, setExperience] = useState<0 | 1 | 2 | null>(state.preferences?.experience ?? null);
+  const [pattern, setPattern] = useState<'regular' | 'irregular'>(state.incomePattern ?? 'irregular');
+  const [income, setIncome] = useState<CategoryId[]>(state.preferences?.incomeCategories ?? []);
+  const [expense, setExpense] = useState<CategoryId[]>(state.preferences?.expenseCategories ?? []);
+  const [focus, setFocus] = useState<JourneyPreferences['focus'] | null>(state.preferences?.focus ?? null);
+  const [balance, setBalance] = useState(state.onboarding.completed ? String(initialBalanceValue(state.transactions, state.openingBalance)) : '');
+  const [result, setResult] = useState(false);
+  const submitted = useRef(false);
+  const amount = balance.trim() ? parseAmount(balance) : 0;
+  const valid = [experience !== null, income.length > 0, expense.length > 0, focus !== null, Number.isFinite(amount) && amount >= 0][step];
+  const profile = profileForExperience(experience ?? 0);
+  const config = PROFILES[profile];
   function finish() {
-    completeOnboarding(score);
-    navigate('/dashboard');
+    if (submitted.current || experience === null || !focus || !income.length || !expense.length || !Number.isFinite(amount) || amount < 0) return;
+    submitted.current = true;
+    state.setMoneyContext(amount, pattern);
+    state.completeOnboarding([2, 5, 8][experience], { experience, focus, incomeCategories: income, expenseCategories: expense });
+    window.scrollTo(0, 0);
+    navigate('/#/dashboard', { replace: true });
   }
-
-  if (showResult) {
-    const config = PROFILES[profile];
-    const ProfileIcon = (Icons as unknown as Record<string, LucideIcon>)[config.icon] || Icons.User;
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white flex flex-col items-center justify-center px-6 max-w-md mx-auto">
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-lg"
-          style={{ backgroundColor: config.corLight }}
-        >
-          <ProfileIcon className="w-12 h-12" style={{ color: config.cor }} strokeWidth={2} />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-8"
-        >
-          <p className="text-sm text-ink-500 mb-1">Seu perfil é</p>
-          <h1 className="text-3xl font-extrabold text-ink-900 mb-2">{config.nome}</h1>
-          <p className="text-ink-600">{config.objetivo}</p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-ink-100">
-            <span className="text-sm font-medium text-ink-700">Pontuação: {score}/10</span>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="w-full space-y-3 mb-8"
-        >
-          <p className="text-sm font-semibold text-ink-700 text-center">O que você terá acesso:</p>
-          <div className="space-y-2">
-            {config.menu.map((item) => {
-              const Icon = (Icons as unknown as Record<string, LucideIcon>)[item.icon] || Icons.Circle;
-              return (
-                <div key={item.path} className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-card">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: config.corLight }}>
-                    <Icon className="w-4 h-4" style={{ color: config.cor }} />
-                  </div>
-                  <span className="text-sm font-medium text-ink-800">{item.label}</span>
-                  <Check className="w-4 h-4 text-primary-600 ml-auto" />
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          onClick={finish}
-          className="btn-primary w-full text-lg py-4"
-        >
-          Acessar meu dashboard <ArrowRight className="w-5 h-5" />
-        </motion.button>
-      </div>
-    );
-  }
-
-  const question = QUESTIONS[currentQ];
-
-  return (
-    <div className="min-h-screen bg-white flex flex-col max-w-md mx-auto px-6 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        {currentQ > 0 && (
-          <button onClick={() => setCurrentQ((q) => q - 1)} className="p-1 text-ink-500 hover:text-ink-900">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        )}
-        <div className="flex-1 h-2 bg-ink-100 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-primary-600 rounded-full"
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-        <span className="text-xs font-medium text-ink-500">{currentQ + 1}/{totalQuestions}</span>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentQ}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -30 }}
-          transition={{ duration: 0.25 }}
-          className="flex-1 flex flex-col"
-        >
-          <h2 className="text-2xl font-bold text-ink-900 mb-6 mt-4">{question.pergunta}</h2>
-          <div className="space-y-3">
-            {question.opcoes.map((opt) => {
-              const isSelected = answers[currentQ] === opt.points;
-              return (
-                <button
-                  key={opt.label}
-                  onClick={() => selectAnswer(opt.points)}
-                  className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
-                    isSelected
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-ink-200 hover:border-ink-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                      isSelected ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'
-                    }`}>
-                      {opt.label}
-                    </div>
-                    <span className="text-sm text-ink-800 pt-0.5">{opt.text}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-      </AnimatePresence>
-    </div>
-  );
+  return <div className="min-h-screen bg-ink-50 px-4 py-5"><header className="mx-auto flex max-w-xl items-center justify-between py-3"><Link to={state.onboarding.completed ? '/dashboard' : '/'} aria-label="Nexo início"><Brand /></Link><span className="text-xs text-ink-500">{result ? 'Seu ponto de partida' : `${step + 1} de 5`}</span></header><main className="mx-auto mt-4 max-w-xl rounded-2xl border border-ink-200 bg-white p-5 sm:p-7">{result ? <><span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ color: config.cor, backgroundColor: config.corLight }}><ProfileMark profile={profile} className="h-7 w-7" /></span><h1 className="text-2xl font-semibold">Seu perfil: {config.nome}</h1><p className="mt-3 text-sm leading-relaxed text-ink-600">{config.objetivo}. Esse é um ponto de partida, não uma nota sobre você.</p><ul className="my-5 space-y-3 text-xs text-ink-600">{[`Suas ${income.length} categorias de entrada e ${expense.length} de despesa ficam disponíveis no registro rápido.`, `Seu foco: ${focus ? FOCUS_LABELS[focus].toLowerCase() : ''}.`, 'Quatro missões por mês e uma trilha com etapas curtas.', 'O valor informado aparece no Extrato como sua primeira entrada de saldo.'].map((text) => <li key={text} className="flex gap-2"><Check className="h-4 w-4 shrink-0 text-primary-700" />{text}</li>)}</ul><button type="button" onClick={finish} className="btn-primary w-full">Começar minha jornada</button><button onClick={() => setResult(false)} className="mt-2 min-h-11 w-full text-xs text-primary-700">Revisar respostas</button></> : <><div role="progressbar" aria-label="Questionário" aria-valuemin={0} aria-valuemax={5} aria-valuenow={step + 1} className="mb-5 h-1.5 rounded-full bg-ink-100"><div className="h-full rounded-full bg-primary-400" style={{ width: `${(step + 1) * 20}%` }} /></div><h1 className="mb-4 text-xl font-semibold">{TITLES[step]}</h1>
+    {step === 0 && <><p className="mb-4 text-xs leading-relaxed text-ink-500">Sua experiência define o perfil e a ordem das práticas, sem bloquear as funções do app.</p>{[{ id: 0 as const, text: 'Estou começando e quero entender meus hábitos' }, { id: 1 as const, text: 'Já acompanho alguns gastos, mas quero me organizar' }, { id: 2 as const, text: 'Já planejo e quero comparar escolhas e melhorar' }].map((item) => <button key={item.id} type="button" aria-pressed={experience === item.id} onClick={() => setExperience(item.id)} className={`mb-2 min-h-14 w-full rounded-xl border p-3 text-left text-sm ${experience === item.id ? 'border-primary-400 bg-primary-50' : 'border-ink-200'}`}>{item.text}</button>)}</>}
+    {step === 1 && <><CategoryPreferences options={RECEITA_CATEGORIES} selected={income} onChange={setIncome} /><fieldset className="mt-4"><legend className="mb-2 text-xs font-semibold">Com que frequência?</legend><div className="grid grid-cols-2 gap-2">{[{ id: 'regular' as const, label: 'Regularmente' }, { id: 'irregular' as const, label: 'Varia ou é de vez em quando' }].map((item) => <button type="button" key={item.id} aria-pressed={pattern === item.id} onClick={() => setPattern(item.id)} className={`min-h-12 rounded-xl border p-2 text-xs ${pattern === item.id ? 'border-primary-400 bg-primary-50' : 'border-ink-200'}`}>{item.label}</button>)}</div></fieldset></>}
+    {step === 2 && <><p className="mb-3 text-xs text-ink-500">Escolha as categorias que você realmente usa ou paga.</p><CategoryPreferences options={DESPESA_CATEGORIES} selected={expense} onChange={setExpense} /></>}
+    {step === 3 && <><p className="mb-3 text-xs text-ink-500">Seu objetivo orienta as missões e a sugestão de próximo passo.</p>{(Object.entries(FOCUS_LABELS) as [JourneyPreferences['focus'], string][]).map(([id, label]) => <button key={id} type="button" aria-pressed={focus === id} onClick={() => setFocus(id)} className={`mb-2 min-h-14 w-full rounded-xl border p-3 text-left text-sm ${focus === id ? 'border-primary-400 bg-primary-50' : 'border-ink-200'}`}>{label}</button>)}</>}
+    {step === 4 && <><label className="block text-xs font-semibold">Dinheiro disponível (R$)<input autoFocus value={balance} onChange={(event) => setBalance(event.target.value)} inputMode="decimal" placeholder="0,00" className="input mt-2 text-2xl" /></label><p className="mt-3 text-xs leading-relaxed text-ink-500">Vai aparecer no Extrato como “Saldo inicial”. Inclua o dinheiro que você já tem, inclusive o reservado para metas; não inclua bens, investimentos nem valores a receber. Se não souber, pode começar com zero.</p>{state.onboarding.completed && <p className="mt-3 text-xs text-primary-700">Estamos revisando seu saldo de partida. Não repita entradas que já estão no Extrato.</p>}</>}
+    <div className="mt-6 flex gap-2">{step > 0 && <button type="button" aria-label="Pergunta anterior" onClick={() => setStep(step - 1)} className="btn-secondary"><ArrowLeft className="h-4 w-4" /></button>}<button type="button" disabled={!valid} onClick={() => { if (step === 4) setResult(true); else setStep(step + 1); window.scrollTo(0, 0); }} className="btn-primary flex-1">{step === 4 ? 'Descobrir meu perfil' : 'Continuar'}<ArrowRight className="h-4 w-4" /></button></div></>}</main></div>;
 }
