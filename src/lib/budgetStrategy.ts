@@ -1,4 +1,4 @@
-﻿import type { CategoryId, ProfileType } from '@/types';
+import type { CategoryId, ProfileType } from '@/types';
 
 export interface BudgetStrategy {
   id: string;
@@ -15,7 +15,7 @@ export interface BudgetStrategyRecommendation extends BudgetStrategy {
   currentEssential: number;
   adjustedForReality: boolean;
 }
-export const ESSENTIAL_CATEGORIES: CategoryId[] = ['moradia', 'alimentacao', 'transporte', 'saude', 'educacao'];
+export const ESSENTIAL_CATEGORIES: CategoryId[] = ['moradia', 'alimentacao', 'mercado', 'transporte', 'celular', 'saude', 'educacao'];
 export const GOAL_CATEGORIES: CategoryId[] = ['investimentos_economia'];
 export const LIFESTYLE_CATEGORIES: CategoryId[] = ['lazer', 'compras', 'assinaturas', 'jogos', 'cartao_credito', 'outros'];
 export type BudgetGroupId = 'essential' | 'lifestyle' | 'goals';

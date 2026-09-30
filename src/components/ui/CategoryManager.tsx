@@ -7,7 +7,7 @@ import type { CategoryDefinition, CategoryId, JourneyPreferences, TransactionTyp
 import { CATEGORY_ICONS } from '@/data/categoryIcons';
 import { Dialog } from './Dialog';
 
-const ICON_NAMES: Record<string, string> = { Wallet: 'Carteira', UtensilsCrossed: 'Alimentação', BusFront: 'Transporte', Home: 'Casa', PartyPopper: 'Lazer', HeartPulse: 'Saúde', BookOpen: 'Estudos', CreditCard: 'Cartão', PiggyBank: 'Economia', Banknote: 'Renda', CircleDot: 'Outros', HandCoins: 'Mesada', BriefcaseBusiness: 'Trabalho', GraduationCap: 'Bolsa', Laptop: 'Tecnologia', Gift: 'Presente', ShoppingBag: 'Compras', PlaySquare: 'Assinatura', Gamepad2: 'Jogos' };
+const ICON_NAMES: Record<string, string> = { Wallet: 'Carteira', UtensilsCrossed: 'Alimentação', BusFront: 'Transporte', Home: 'Casa', PartyPopper: 'Lazer', HeartPulse: 'Saúde', BookOpen: 'Estudos', CreditCard: 'Cartão', PiggyBank: 'Economia', Banknote: 'Renda', CircleDot: 'Outros', HandCoins: 'Mesada', BriefcaseBusiness: 'Trabalho', GraduationCap: 'Bolsa', Laptop: 'Tecnologia', Gift: 'Presente', ShoppingBag: 'Compras', PlaySquare: 'Assinatura', Gamepad2: 'Jogos', ShoppingBasket: 'Cesta', Smartphone: 'Celular' };
 
 export function CategoryManager({ onClose }: { onClose: () => void }) {
   const state = useStore();

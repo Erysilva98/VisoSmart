@@ -40,7 +40,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={onboarding.completed ? <Navigate to="/dashboard" replace /> : <Landing />} />
-      <Route path="/onboarding" element={onboarding.completed ? <Navigate to="/perfil" replace /> : <Onboarding />} />
+      <Route path="/onboarding" element={onboarding.completed ? <Navigate to="/dashboard" replace /> : <Onboarding />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/gastos" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
       <Route path="/planejamento" element={<Navigate to="/orcamentos" replace />} />

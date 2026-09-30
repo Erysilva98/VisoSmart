@@ -14,6 +14,8 @@ export type CategoryId =
   | 'educacao'
   | 'cartao_credito'
   | 'investimentos_economia'
+  | 'mercado'
+  | 'celular'
   | 'salario'
   | 'outros';
 
