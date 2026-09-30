@@ -20,6 +20,22 @@ export default defineConfig({
         dir: 'ltr',
         categories: ['finance', 'productivity', 'education'],
         prefer_related_applications: false,
+        screenshots: [
+          {
+            src: 'screenshot-dashboard.png',
+            sizes: '1440x900',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Tela inicial do Nexo em computador, com valores de exemplo',
+          },
+          {
+            src: 'screenshot-mobile.png',
+            sizes: '390x844',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Tela inicial do Nexo em celular, com valores de exemplo',
+          },
+        ],
         launch_handler: {
           client_mode: 'navigate-existing',
         },
@@ -67,7 +83,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest,json}'],
-        globIgnores: ['**/screenshot-dashboard.png'],
+        globIgnores: ['**/screenshot-*.png'],
         navigateFallback: 'index.html',
         clientsClaim: true,
         skipWaiting: true,
