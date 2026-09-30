@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowDownLeft, ArrowUpRight, BookOpen, ChartPie, Eye, EyeOff, ReceiptText, SlidersHorizontal, Target, ChevronRight } from 'lucide-react';
 import { ExpenseDonut } from '@/components/ui/ExpenseDonut';
 import { SpendingCalendar } from '@/components/ui/SpendingCalendar';
@@ -29,7 +29,7 @@ export function Dashboard() {
     navigate(`/gastos?month=${month}`, { state: { filter: filter ?? 'all', categoria: categoria ?? null, month } });
   }
 
-  return <Layout title="Início" compact headerRight={<Link to="/perfil" className="inline-flex min-h-11 items-center rounded-full border border-ink-200 bg-white px-3 text-xs font-semibold text-primary-700">Meu perfil</Link>}>
+  return <Layout title="Início" compact>
     <h1 className="sr-only">Resumo financeiro do mês</h1>
     <div className="home-month"><MonthSelector value={selectedMonth} onChange={(date) => setParams({ month: getMonthKey(date) }, { replace: true })} /></div>
     <section aria-label="Resultado do mês" className="home-summary rounded-2xl border border-ink-200/70 bg-white px-3 py-3">
