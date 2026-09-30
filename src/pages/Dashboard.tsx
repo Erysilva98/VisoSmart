@@ -1,11 +1,12 @@
 import { ExpenseDonut } from '@/components/ui/ExpenseDonut';
-import { FOCUS_LABELS } from '@/lib/personalization';
+import { Dialog } from '@/components/ui/Dialog';
+import { spendingAlert } from '@/lib/spendingAlert';
 import { Link } from 'react-router-dom';
 import { recordedMoney, spendingSummary } from '@/lib/financialSummary';
 import { SpendingCalendar } from '@/components/ui/SpendingCalendar';
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, ChartPie, BookOpen, ChevronRight, Eye, EyeOff, ReceiptText, Target } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ChartPie, TriangleAlert, SlidersHorizontal, BookOpen, ChevronRight, Eye, EyeOff, ReceiptText, Target } from 'lucide-react';
 import { Layout } from '@/components/ui/Layout';
 import { QuickAddModal } from '@/components/ui/QuickAddModal';
 import { FAB } from '@/components/ui/FAB';
@@ -18,17 +19,20 @@ import type { CategoryId, TransactionType } from '@/types';
 
 export function Dashboard() {
   const [registrationDate, setRegistrationDate] = useState<string | undefined>();
+  const [showInsights, setShowInsights] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const { transactions, goals, budgets, openingBalance, incomePattern, preferences, plannedExpenses, creditCards } = useStore();
+  const { transactions, goals, budgets, openingBalance, incomePattern, plannedExpenses, creditCards } = useStore();
   const monthParam = params.get('month');
   const selectedMonth = useMemo(() => parseMonthKey(monthParam), [monthParam]);
   const month = getMonthKey(selectedMonth);
   const view = useMemo(() => getTransactionView(transactions, { month: selectedMonth }), [transactions, selectedMonth]);
   const available = recordedMoney(transactions, goals, openingBalance);
   const summary = spendingSummary(transactions, budgets, selectedMonth);
+  const alert = spendingAlert(available.available, summary.categories, budgets);
+  const alertColor = { red: 'text-red-600 bg-red-50', yellow: 'text-amber-600 bg-amber-50', green: 'text-green-600 bg-green-50' }[alert.level];
   const money = (value: number) => hideBalance ? '••••' : formatCurrency(value);
   function openStatement(filter?: TransactionType, categoria?: CategoryId) {
     navigate(`/gastos?month=${month}`, { state: { filter: filter ?? 'all', categoria: categoria ?? null, month } });
@@ -45,15 +49,16 @@ export function Dashboard() {
         <button type="button" onClick={() => openStatement('receita')} className="min-h-11 pr-3 text-left"><span className="flex items-center gap-1 text-[11px] text-ink-500"><ArrowDownLeft className="h-3 w-3 text-income" />Entrou no mês</span><span className="mt-1 block text-base font-semibold text-income" data-month-income>{money(view.income)}</span></button>
         <button type="button" onClick={() => openStatement('despesa')} className="min-h-11 pl-4 text-left"><span className="flex items-center gap-1 text-[11px] text-ink-500"><ArrowUpRight className="h-3 w-3 text-expense" />Saiu no mês</span><span className="mt-1 block text-base font-semibold text-expense" data-month-expenses>{money(view.expenses)}</span></button>
       </div>
-      <details className="mt-3 border-t border-ink-100 pt-3" aria-label="Dinheiro registrado"><summary className="cursor-pointer text-xs font-semibold text-primary-700">Livre hoje, pelos registros: {money(available.available)}</summary><p className="mt-2 text-[11px] leading-relaxed text-ink-500">Total registrado: {money(available.total)} · Reservado em metas: {money(available.reserved)}. Inclui todos os meses até hoje e o saldo inicial, sem descontar contas futuras.</p>{available.available < 0 && <p className="text-xs text-expense">Saídas e reservas superam as entradas. Confira seus registros antes de reservar mais.</p>}{(plannedExpenses.length > 0 || creditCards.length > 0) && <Link to="/perfil" className="text-link text-[10px]">Há compromissos antigos arquivados. Revise no perfil.</Link>}</details>
+      <div className="mt-3 flex items-center gap-2 border-t border-ink-100 pt-2">
+        <button type="button" aria-haspopup="dialog" onClick={() => setShowInsights(true)} className="flex min-h-11 min-w-0 flex-1 items-center gap-1 text-left text-xs font-semibold text-primary-700"><ChevronRight className="h-4 w-4 shrink-0" /><span>Livre hoje, pelos registros: {money(available.available)}</span></button>
+        <button type="button" aria-haspopup="dialog" aria-label={`Orientações: ${alert.label}`} data-alert-level={alert.level} onClick={() => setShowInsights(true)} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${alertColor}`}><TriangleAlert className="h-5 w-5" strokeWidth={1.8} /></button>
+      </div>
     </section>
 
-    <nav aria-label="Atalhos" className="my-3 grid grid-cols-3 gap-1 rounded-2xl border border-ink-200/70 bg-white p-2">
-      {[{ label: 'Extrato', icon: ReceiptText, action: () => openStatement() }, { label: 'Aprender', icon: BookOpen, action: () => navigate('/aprender') }, { label: 'Metas', icon: Target, action: () => navigate('/metas') }].map(({ label, icon: Icon, action }) => <button key={label} type="button" onClick={action} className="flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl text-primary-700 transition-colors hover:bg-primary-50"><span className={`flex h-8 w-8 items-center justify-center rounded-xl ${label === 'Aprender' ? 'learn-shortcut bg-primary-100 ring-1 ring-primary-200' : 'bg-primary-50'}`}><Icon className="h-4 w-4" strokeWidth={1.7} /></span><span className="text-[10px] font-medium">{label}</span></button>)}
+    <nav aria-label="Atalhos" className="my-3 grid grid-cols-4 gap-1 rounded-2xl border border-ink-200/70 bg-white p-2">
+      {[{ label: 'Extrato', icon: ReceiptText, action: () => openStatement() }, { label: 'Aprender', icon: BookOpen, action: () => navigate('/aprender') }, { label: 'Metas', icon: Target, action: () => navigate('/metas') }, { label: 'Limites', icon: SlidersHorizontal, action: () => navigate('/orcamentos') }].map(({ label, icon: Icon, action }) => <button key={label} type="button" onClick={action} className="flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-xl text-primary-700 transition-colors hover:bg-primary-50"><span className={`flex h-8 w-8 items-center justify-center rounded-xl ${label === 'Aprender' ? 'learn-shortcut bg-primary-100 ring-1 ring-primary-200' : 'bg-primary-50'}`}><Icon className="h-4 w-4" strokeWidth={1.7} /></span><span className="text-[10px] font-medium">{label}</span></button>)}
     </nav>
 
-    {preferences && <Link to={preferences.focus === 'save' ? '/metas' : preferences.focus === 'organize' ? '/orcamentos' : '/aprender'} className="mb-3 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-primary-50 px-3 text-[11px] text-primary-700"><span>Seu foco: <strong>{FOCUS_LABELS[preferences.focus]}</strong></span><ChevronRight className="h-3 w-3 shrink-0" /></Link>}
-    <section className="mb-3 rounded-2xl border border-primary-100 bg-primary-50/40 p-4" aria-label="Leitura dos gastos"><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Onde vale prestar atenção</h2><Link to="/orcamentos" className="text-link text-[11px]">Meus limites</Link></div>{summary.largest ? <button type="button" onClick={() => openStatement('despesa', summary.largest.categoria)} className="mt-1 w-full text-left text-xs leading-relaxed text-ink-700"><strong>{CATEGORIES[summary.largest.categoria].nome}</strong> é seu maior gasto: {money(summary.largest.valor)}{!hideBalance && ` (${summary.largestPercent}% das despesas)`}. Toque para entender os registros.</button> : <p className="mt-1 text-xs text-ink-500">Registre os gastos que já aconteceram para descobrir para onde o dinheiro vai.</p>}{summary.over.slice(0, 2).map((item) => <p key={item.categoria} className="mt-2 text-xs text-expense">{CATEGORIES[item.categoria].nome}: {money(item.excess)} acima do limite atual. Revise as próximas escolhas.</p>)}{summary.largest && summary.over.length === 0 && <p className="mt-2 text-[11px] text-ink-500">Um gasto alto não é necessariamente ruim. Veja o que é necessário e o que você pode ajustar.</p>}{incomePattern === 'irregular' && <p className="mt-2 text-[11px] text-ink-500">Como sua renda varia, planeje com o dinheiro que já recebeu.</p>}</section>
     <div className="space-y-3">
       <SpendingCalendar key={month} month={selectedMonth} items={view.items} hidden={hideBalance} onViewStatement={() => openStatement()} onAdd={(date) => { setRegistrationDate(date); setShowAdd(true); }} />
       <section aria-label="Gastos por categoria" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-2">
@@ -62,6 +67,11 @@ export function Dashboard() {
       </section>
     </div>
 
+    {showInsights && <Dialog title="Seu dinheiro e orientações" onClose={() => setShowInsights(false)}>
+      <p className="text-xs font-semibold text-primary-700">Livre hoje, pelos registros</p><p className="mt-1 text-2xl font-semibold">{money(available.available)}</p><p className="mt-2 text-[11px] leading-relaxed text-ink-500">Total registrado: {money(available.total)} · Reservado em metas: {money(available.reserved)}. Inclui todos os meses até hoje e o saldo inicial, sem descontar contas futuras.</p>{available.available < 0 && <p className="text-xs text-expense">Saídas e reservas superam as entradas. Confira seus registros antes de reservar mais.</p>}{(plannedExpenses.length > 0 || creditCards.length > 0) && <Link to="/perfil" className="text-link text-[10px]">Há compromissos antigos arquivados. Revise no perfil.</Link>}      <div className={`my-4 flex items-center gap-2 rounded-xl p-3 text-xs font-semibold ${alertColor}`}><TriangleAlert className="h-5 w-5 shrink-0" />{alert.label}</div>
+      <p className="mb-3 text-[11px] text-ink-500">Orientações para {selectedMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}. O valor livre considera todos os registros até hoje.</p>
+      {alert.level === 'yellow' && alert.near.map((item) => <p key={item.categoria} className="mb-3 text-xs text-amber-700">{CATEGORIES[item.categoria].nome}: você já usou pelo menos 80% do limite mensal.</p>)}    <section className="mb-3 rounded-2xl border border-primary-100 bg-primary-50/40 p-4" aria-label="Leitura dos gastos"><div className="flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">Onde vale prestar atenção</h2><Link to="/orcamentos" className="text-link text-[11px]">Meus limites</Link></div>{summary.largest ? <button type="button" onClick={() => openStatement('despesa', summary.largest.categoria)} className="mt-1 w-full text-left text-xs leading-relaxed text-ink-700"><strong>{CATEGORIES[summary.largest.categoria].nome}</strong> é seu maior gasto: {money(summary.largest.valor)}{!hideBalance && ` (${summary.largestPercent}% das despesas)`}. Toque para entender os registros.</button> : <p className="mt-1 text-xs text-ink-500">Registre os gastos que já aconteceram para descobrir para onde o dinheiro vai.</p>}{summary.over.slice(0, 2).map((item) => <p key={item.categoria} className="mt-2 text-xs text-expense">{CATEGORIES[item.categoria].nome}: {money(item.excess)} acima do limite atual. Revise as próximas escolhas.</p>)}{summary.largest && summary.over.length === 0 && <p className="mt-2 text-[11px] text-ink-500">Um gasto alto não é necessariamente ruim. Veja o que é necessário e o que você pode ajustar.</p>}{incomePattern === 'irregular' && <p className="mt-2 text-[11px] text-ink-500">Como sua renda varia, planeje com o dinheiro que já recebeu.</p>}</section>
+<p className="text-[10px] leading-relaxed text-ink-500">Verde: sem alertas detectados. Amarelo: faltam despesas registradas ou um limite chegou a 80%. Vermelho: saldo livre negativo ou limite ultrapassado. A orientação considera apenas os dados registrados.</p></Dialog>}
     <FAB onClick={() => { setRegistrationDate(undefined); setShowAdd(true); }} />
     <QuickAddModal initialDate={registrationDate} open={showAdd} onClose={() => { setShowAdd(false); }} />
   </Layout>;
