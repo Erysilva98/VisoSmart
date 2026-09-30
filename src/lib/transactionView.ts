@@ -34,16 +34,19 @@ export function getTransactionView(transactions: Transaction[], filters: Transac
   let openingCents = 0;
   let incomeCents = 0;
   let expenseCents = 0;
+  let reservedCents = 0;
   const categoryCents = new Map<CategoryId, number>();
   items.forEach((item) => {
     const cents = Math.round(item.valor * 100);
+    if (item.origem === 'meta_aporte') { reservedCents += cents; return; }
+    if (item.origem === 'meta_saque') { reservedCents -= cents; return; }
     if (item.origem === 'saldo_inicial') openingCents += cents;
     if (item.tipo === 'receita') incomeCents += cents;
-    else {
+    else if (item.tipo === 'despesa') {
       expenseCents += cents;
       categoryCents.set(item.categoria, (categoryCents.get(item.categoria) ?? 0) + cents);
     }
   });
   const categories = Array.from(categoryCents, ([categoria, cents]) => ({ categoria, valor: cents / 100 })).sort((a, b) => b.valor - a.valor);
-  return { initialBalance: openingCents / 100, items, income: incomeCents / 100, expenses: expenseCents / 100, balance: (incomeCents - expenseCents) / 100, categories };
+  return { initialBalance: openingCents / 100, items, income: incomeCents / 100, expenses: expenseCents / 100, balance: (incomeCents - expenseCents - reservedCents) / 100, categories };
 }

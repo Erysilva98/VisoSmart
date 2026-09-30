@@ -65,6 +65,8 @@ export function canCompleteLesson(lessonId: string, state: Omit<ProgressState, '
   if (lesson?.desafioPratico) {
     const validations: Record<string, boolean> = {
       reflexao: true, filtro: Boolean(state.learningActions?.filter), calendario: Boolean(state.learningActions?.calendar),
+      categorias_despesa: Boolean(state.learningActions?.expenseCategories), categorias_entrada: Boolean(state.learningActions?.incomeCategories),
+      grafico: Boolean(state.learningActions?.chart), perfil: Boolean(state.learningActions?.profile),
       despesa: expenses.length >= 1, receita: state.transactions.some((item) => item.tipo === 'receita' && item.origem !== 'saldo_inicial'),
       transacao: state.transactions.length >= 1, categorias: new Set(expenses.map((item) => item.categoria)).size >= 2,
       meta: state.goals.length >= 1, orcamento: state.budgets.length >= 1, orcamentos_2: state.budgets.length >= 2, investimento: hasSavingsPlan,

@@ -4,6 +4,8 @@ export interface CategoryConfig { id: CategoryId; nome: string; icon: string; co
 
 export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
   saldo_inicial: { id: 'saldo_inicial', nome: 'Saldo inicial', icon: 'Wallet', cor: '#15803d', tipo: 'receita', legacy: true },
+  metas: { id: 'metas', nome: 'Metas', icon: 'PiggyBank', cor: '#2476ce', tipo: 'objetivo' },
+  saque: { id: 'saque', nome: 'Saque', icon: 'ArrowDownToLine', cor: '#2476ce', tipo: 'objetivo' },
   mesada: { id: 'mesada', nome: 'Mesada', icon: 'HandCoins', cor: '#15803d', tipo: 'receita' },
   estagio: { id: 'estagio', nome: 'Estágio', icon: 'BriefcaseBusiness', cor: '#2476ce', tipo: 'receita' },
   bolsa: { id: 'bolsa', nome: 'Bolsa acadêmica', icon: 'GraduationCap', cor: '#7c5cff', tipo: 'receita' },
