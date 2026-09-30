@@ -7,7 +7,7 @@ export function getSaldo(transactions: Transaction[]): number {
 
 export function getReceitasMes(transactions: Transaction[], ref: Date = new Date()): number {
   return transactions
-    .filter((t) => t.tipo === 'receita' && isSameMonth(t.data, ref))
+    .filter((t) => t.tipo === 'receita' && t.origem !== 'saldo_inicial' && isSameMonth(t.data, ref))
     .reduce((acc, t) => acc + t.valor, 0);
 }
 

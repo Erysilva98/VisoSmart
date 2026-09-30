@@ -1,5 +1,6 @@
+import { orderedTrail, TRAIL_LESSONS } from './trailLessons';
 import { SIMPLE_LESSONS } from './simpleLessons';
-import type { ProfileType } from '@/types';
+import type { ProfileType, JourneyPreferences } from '@/types';
 
 export interface Lesson {
   question?: { text: string; options: string[]; correct: number; explanation: string };
@@ -68,5 +69,5 @@ export const TRACK_LESSONS: Lesson[] = (Object.keys(tracks) as ProfileType[]).fl
 
 const legacyTopics: Topic[] = [explorer[0], explorer[3], equilibrado[6], expert[7], expert[0], expert[1], equilibrado[4], expert[4]];
 export const LESSONS: Lesson[] = legacyTopics.map(([title, content, task], index) => ({ id: `l${index + 1}`, titulo: title, descricao: title, duracao: '3 min', xp: 15, perfil: 'all', conteudo: content, desafio: task, desafioPratico: tasks[task] }));
-export function getLessonsForProfile(profile: ProfileType): Lesson[] { void profile; return SIMPLE_LESSONS; }
-export function getLessonById(id: string): Lesson | undefined { return [...SIMPLE_LESSONS, ...LESSONS, ...TRACK_LESSONS].find((lesson) => lesson.id === id); }
+export function getLessonsForProfile(profile: ProfileType, focus?: JourneyPreferences['focus']): Lesson[] { return orderedTrail(profile, focus); }
+export function getLessonById(id: string): Lesson | undefined { return [...TRAIL_LESSONS, ...SIMPLE_LESSONS, ...LESSONS, ...TRACK_LESSONS].find((lesson) => lesson.id === id); }

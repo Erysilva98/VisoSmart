@@ -24,6 +24,10 @@ test('reserving and releasing never change total money', () => {
   assert.deepEqual(recordedMoney(t, [{ valorAtual: 30 }], 0, now), { total: 100, reserved: 30, available: 70 });
   assert.deepEqual(recordedMoney(t, [{ valorAtual: 10 }], 0, now), { total: 100, reserved: 10, available: 90 });
 });
+test('today counts before noon while the next local calendar day stays excluded', () => {
+  const t = [tx('today', 'receita', 100, 'mesada', '2026-09-05T12:00:00'), tx('next', 'receita', 200, 'bolsa', '2026-09-06')];
+  assert.equal(recordedMoney(t, [], 0, new Date(2026, 8, 5, 8)).total, 100);
+});
 test('largest expense and over-limit warnings use the requested month and integer cents', () => {
   const t = [tx('a', 'despesa', 10.1), tx('b', 'despesa', 20.2), tx('c', 'despesa', 9.7, 'transporte'), tx('d', 'despesa', 900, 'lazer', '2026-08-01T12:00:00')];
   const view = spendingSummary(t, [{ categoria: 'alimentacao', limite: 20 }], new Date(2026, 8, 1));

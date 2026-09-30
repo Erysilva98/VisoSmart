@@ -1,13 +1,15 @@
+import { missionProgress } from './journeyMissions';
 import type { AppState, Challenge } from '@/types';
 import { getLessonById } from '@/data/lessons';
 
-type ProgressState = Pick<AppState, 'transactions' | 'goals' | 'budgets' | 'lessonProgress'>;
+type ProgressState = Pick<AppState, 'transactions' | 'goals' | 'budgets' | 'lessonProgress' | 'learningActions' | 'lessonReviews'>;
 
 /** Centraliza regras verificáveis; o store é a única camada que concede XP. */
 export function canCompleteChallenge(challenge: Challenge, state: ProgressState): boolean {
+  if (challenge.id.startsWith('journey-')) { const progress = missionProgress(challenge, state); return progress.current >= progress.target; }
   const baseId = challenge.id.replace(/_\d{4}-\d{2}$/, '');
   const expenses = state.transactions.filter((item) => item.tipo === 'despesa');
-  const incomes = state.transactions.filter((item) => item.tipo === 'receita');
+  const incomes = state.transactions.filter((item) => item.tipo === 'receita' && item.origem !== 'saldo_inicial');
   const completedLessons = new Set(state.lessonProgress.filter((item) => item.concluido).map((item) => item.lessonId));
   const hasSavingsPlan = state.budgets.some((item) => item.categoria === 'investimentos_economia');
   const isBalanced = incomes.reduce((sum, item) => sum + item.valor, 0) >= expenses.reduce((sum, item) => sum + item.valor, 0);
@@ -42,12 +44,13 @@ export function canCompleteChallenge(challenge: Challenge, state: ProgressState)
 }
 
 export function getChallengeProgress(challenge: Challenge, state: ProgressState): { current: number; target: number } {
+  if (challenge.id.startsWith('journey-')) return missionProgress(challenge, state);
   const baseId = challenge.id.replace(/_\d{4}-\d{2}$/, '');
   const expenses = state.transactions.filter((item) => item.tipo === 'despesa');
   const completedLessons = state.lessonProgress.filter((item) => item.concluido).length;
   const values: Record<string, [number, number]> = {
     exp_reg15: [expenses.length, 15], exp_cat: [expenses.length, 1], exp_aula: [completedLessons, 1],
-    eq_orc: [state.budgets.length, 3], eq_contas: [state.budgets.length, 2], eq_guardar: [state.transactions.filter((item) => item.tipo === 'receita').length, 1],
+    eq_orc: [state.budgets.length, 3], eq_contas: [state.budgets.length, 2], eq_guardar: [state.transactions.filter((item) => item.tipo === 'receita' && item.origem !== 'saldo_inicial').length, 1],
     con_meta: [state.goals.length, 1], con_inv: [state.lessonProgress.some((item) => item.lessonId === 'l4' && item.concluido) ? 1 : 0, 1], con_red: [expenses.length, 2],
     est_rel: [state.transactions.length, 3], est_pat: [state.goals.length, 1], est_otm: [canCompleteChallenge(challenge, state) ? 1 : 0, 1], est_mestre_teste: [1, 1],
   };
@@ -61,7 +64,8 @@ export function canCompleteLesson(lessonId: string, state: Omit<ProgressState, '
   const hasSavingsPlan = state.budgets.some((item) => item.categoria === 'investimentos_economia');
   if (lesson?.desafioPratico) {
     const validations: Record<string, boolean> = {
-      despesa: expenses.length >= 1, receita: state.transactions.some((item) => item.tipo === 'receita'),
+      reflexao: true, filtro: Boolean(state.learningActions?.filter), calendario: Boolean(state.learningActions?.calendar),
+      despesa: expenses.length >= 1, receita: state.transactions.some((item) => item.tipo === 'receita' && item.origem !== 'saldo_inicial'),
       transacao: state.transactions.length >= 1, categorias: new Set(expenses.map((item) => item.categoria)).size >= 2,
       meta: state.goals.length >= 1, orcamento: state.budgets.length >= 1, orcamentos_2: state.budgets.length >= 2, investimento: hasSavingsPlan,
     };

@@ -3,6 +3,8 @@ export type ProfileType = 'explorer' | 'equilibrado' | 'construtor' | 'estrategi
 export type TransactionType = 'receita' | 'despesa';
 
 export type CategoryId =
+  | `custom_${string}`
+  | 'saldo_inicial'
   | 'mesada' | 'estagio' | 'bolsa' | 'freelas' | 'presentes' | 'compras' | 'assinaturas' | 'jogos'
   | 'alimentacao'
   | 'transporte'
@@ -22,7 +24,7 @@ export interface Transaction {
   categoria: CategoryId;
   data: string; // ISO date string
   descricao?: string;
-  origem?: 'divida' | 'prevista' | 'cartao' | 'fixa' | 'recorrente';
+  origem?: 'saldo_inicial' | 'divida' | 'prevista' | 'cartao' | 'fixa' | 'recorrente';
 }
 
 export type PlannedExpenseType = 'divida' | 'fixa' | 'recorrente' | 'avulsa' | 'outro';
@@ -138,7 +140,19 @@ export interface Budget {
   limite: number;
 }
 
+export interface JourneyPreferences {
+  experience: 0 | 1 | 2;
+  incomeCategories: CategoryId[];
+  expenseCategories: CategoryId[];
+  focus: 'understand' | 'organize' | 'save';
+}
+export type LearningAction = 'filter' | 'calendar' | 'budget' | 'goal';
+
 export interface AppState {
+  categoryDefinitions?: CategoryDefinition[];
+  lessonReviews?: Record<string, string>;
+  preferences?: JourneyPreferences;
+  learningActions?: Partial<Record<LearningAction, string>>;
   openingBalance?: number;
   incomePattern?: 'regular' | 'irregular';
   onboarding: OnboardingState;
@@ -156,3 +170,5 @@ export interface AppState {
   cardOrder: string[];
   disabledCards: string[];
 }
+
+export interface CategoryDefinition { id: CategoryId; nome: string; icon: string; cor: string; tipo: TransactionType | "ambos" | "objetivo"; }

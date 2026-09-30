@@ -31,6 +31,7 @@ export function Transactions() {
   const remove = (item: Transaction) => { deleteTransaction(item.id); setDeleted(item); };
   const deleteTransaction = useStore((s) => s.deleteTransaction);
   const updateTransaction = useStore((s) => s.updateTransaction);
+  const recordLearningAction = useStore((s) => s.recordLearningAction);
   const monthParam = params.get('month') ?? requested?.month;
   const selectedMonth = useMemo(() => parseMonthKey(monthParam), [monthParam]);
 
@@ -43,6 +44,7 @@ export function Transactions() {
 
   const view = useMemo(() => getTransactionView(transactions, { month: selectedMonth, type: filter, category: categoryFilter, search }), [transactions, selectedMonth, filter, categoryFilter, search]);
   const hasFilters = filter !== 'all' || Boolean(categoryFilter) || Boolean(search.trim());
+  useEffect(() => { if (hasFilters && view.items.length > 0 && getMonthKey(selectedMonth) === getMonthKey(new Date())) recordLearningAction('filter'); }, [hasFilters, view.items.length, selectedMonth, recordLearningAction]);
   function clearFilters() { setFilter('all'); setCategoryFilter(null); setSearch(''); }
 
   return <Layout title="Extrato" compact>
@@ -54,7 +56,7 @@ export function Transactions() {
         <button type="button" onClick={() => setFilter(filter === 'receita' ? 'all' : 'receita')} aria-pressed={filter === 'receita'} className={`p-3 text-left sm:p-4 ${filter === 'receita' ? 'bg-primary-50' : 'hover:bg-ink-50'}`}><span className="flex items-center gap-1 text-[11px] text-ink-500"><ArrowDownLeft className="h-3 w-3 text-income" />Entrou no mês</span><span className="mt-1 block text-lg font-semibold text-income" data-filtered-income>{formatCurrency(view.income)}</span></button>
         <button type="button" onClick={() => setFilter(filter === 'despesa' ? 'all' : 'despesa')} aria-pressed={filter === 'despesa'} className={`p-3 text-left sm:p-4 ${filter === 'despesa' ? 'bg-primary-50' : 'hover:bg-ink-50'}`}><span className="flex items-center gap-1 text-[11px] text-ink-500"><ArrowUpRight className="h-3 w-3 text-expense" />Saiu no mês</span><span className="mt-1 block text-lg font-semibold text-expense" data-filtered-expenses>{formatCurrency(view.expenses)}</span></button>
       </div>
-      <p role="status" aria-live="polite" className="border-t border-ink-100 px-3 py-2 text-[10px] text-ink-500 sm:px-4">Totais dos {view.items.length} {view.items.length === 1 ? 'registro exibido' : 'registros exibidos'}{hasFilters ? ' · filtros aplicados' : ''}</p>
+      <p role="status" aria-live="polite" className="border-t border-ink-100 px-3 py-2 text-[10px] text-ink-500 sm:px-4">{view.initialBalance > 0 && <>Inclui {formatCurrency(view.initialBalance)} de saldo inicial, não de renda recebida. </>}Totais dos {view.items.length} {view.items.length === 1 ? 'registro exibido' : 'registros exibidos'}{hasFilters ? ' · filtros aplicados' : ''}</p>
     </section>
 
     <div className="mb-3 space-y-2">
@@ -76,6 +78,7 @@ function TransactionEditor({ transaction, onClose, onSave, onDelete }: { transac
   const options = [...new Set([...cats, ...(transaction.tipo === form.tipo ? [transaction.categoria] : [])])];
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  if (transaction.origem === 'saldo_inicial') return <Dialog title="Ajustar saldo inicial" onClose={onClose}><p className="mb-3 text-xs text-ink-500">Este é o dinheiro que você já tinha ao começar, não uma nova receita.</p><form onSubmit={(event) => { event.preventDefault(); if (Number.isFinite(amount) && amount >= 0) onSave({ ...transaction, valor: amount }); }}><label className="block text-xs font-semibold">Saldo inicial (R$)<input value={form.valor} onChange={(event) => setForm({ ...form, valor: event.target.value })} inputMode="decimal" className="input mt-2" /></label><button disabled={!Number.isFinite(amount) || amount < 0} className="btn-primary mt-4 w-full">Salvar saldo inicial</button></form></Dialog>;
   const canSave = Number.isFinite(amount) && amount > 0 && Boolean(form.data) && form.data <= today && options.includes(form.categoria);
   return <Dialog title="Editar registro" onClose={onClose}><form className="space-y-3" onSubmit={(event) => { event.preventDefault(); if (canSave) onSave({ tipo: form.tipo, categoria: form.categoria, valor: amount, data: `${form.data}T12:00:00`, descricao: form.descricao || undefined, origem: transaction.origem }); }}><label className="block text-xs font-semibold">Tipo<select value={form.tipo} onChange={(event) => { const tipo = event.target.value as TransactionType; setForm({ ...form, tipo, categoria: tipo === 'receita' ? RECEITA_CATEGORIES[0] : DESPESA_CATEGORIES[0] }); }} className="input mt-1"><option value="despesa">Despesa</option><option value="receita">Receita</option></select></label><label className="block text-xs font-semibold">Valor<input value={form.valor} inputMode="decimal" onChange={(event) => setForm({ ...form, valor: event.target.value })} className="input mt-1" /></label><label className="block text-xs font-semibold">Categoria<select value={form.categoria} onChange={(event) => setForm({ ...form, categoria: event.target.value as CategoryId })} className="input mt-1">{options.map((id) => <option key={id} value={id}>{CATEGORIES[id].nome}</option>)}</select></label><label className="block text-xs font-semibold">Data<input required type="date" max={today} value={form.data} onChange={(event) => setForm({ ...form, data: event.target.value })} className="input mt-1" /></label><label className="block text-xs font-semibold">Descrição (opcional)<input value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} className="input mt-1" /></label><button disabled={!canSave} className="btn-primary w-full">Salvar alteração</button><button type="button" onClick={onDelete} className="min-h-11 w-full text-sm text-expense">Excluir registro</button></form></Dialog>;
 }

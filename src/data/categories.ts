@@ -1,8 +1,9 @@
-﻿import type { CategoryId } from '@/types';
+import type { CategoryId, CategoryDefinition } from '@/types';
 
 export interface CategoryConfig { id: CategoryId; nome: string; icon: string; cor: string; tipo: 'despesa' | 'receita' | 'ambos' | 'objetivo'; legacy?: boolean; }
 
 export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
+  saldo_inicial: { id: 'saldo_inicial', nome: 'Saldo inicial', icon: 'Wallet', cor: '#15803d', tipo: 'receita', legacy: true },
   mesada: { id: 'mesada', nome: 'Mesada', icon: 'HandCoins', cor: '#15803d', tipo: 'receita' },
   estagio: { id: 'estagio', nome: 'Estágio', icon: 'BriefcaseBusiness', cor: '#2476ce', tipo: 'receita' },
   bolsa: { id: 'bolsa', nome: 'Bolsa acadêmica', icon: 'GraduationCap', cor: '#7c5cff', tipo: 'receita' },
@@ -28,3 +29,22 @@ export const RECEITA_CATEGORIES: CategoryId[] = ['mesada', 'estagio', 'bolsa', '
 export function getCategory(id: CategoryId): CategoryConfig { return CATEGORIES[id]; }
 
 
+
+const DEFAULTS = { ...CATEGORIES };
+const DEFAULT_EXPENSES = [...DESPESA_CATEGORIES];
+const DEFAULT_INCOME = [...RECEITA_CATEGORIES];
+/** Stable IDs preserve historical records when names change. */
+export function syncCategories(definitions: CategoryDefinition[] = []) {
+  for (const id of Object.keys(CATEGORIES) as CategoryId[]) delete CATEGORIES[id];
+  Object.assign(CATEGORIES, DEFAULTS);
+  DESPESA_CATEGORIES.splice(0, DESPESA_CATEGORIES.length, ...DEFAULT_EXPENSES);
+  RECEITA_CATEGORIES.splice(0, RECEITA_CATEGORIES.length, ...DEFAULT_INCOME);
+  for (const definition of definitions) {
+    if (definition.id === 'saldo_inicial') continue;
+    CATEGORIES[definition.id] = { ...CATEGORIES[definition.id], ...definition };
+    if (definition.id.startsWith('custom_')) {
+      if (definition.tipo === 'despesa') DESPESA_CATEGORIES.push(definition.id);
+      if (definition.tipo === 'receita') RECEITA_CATEGORIES.push(definition.id);
+    }
+  }
+}

@@ -1,14 +1,16 @@
+import { syncCategories } from '@/data/categories';
+import { localDateTime, withInitialBalance } from '@/lib/personalization';
+import { monthlyMissions } from '@/lib/journeyMissions';
 import { create } from 'zustand';
 import type {
-  AppState, Transaction, Goal, Challenge, Investment,
-  ProfileType, Budget, LessonProgress, CategoryId, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
+  AppState, CategoryDefinition, Transaction, Goal, Investment, JourneyPreferences, LearningAction,
+  Budget, LessonProgress, CategoryId, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
 } from '@/types';
 import { clearState, loadState, requestPersistentStorage, saveState } from '@/lib/db';
-import { getProfileFromExperience, getProfileFromScore, getProfileRank } from '@/data/profiles';
-import { generateChallengesForProfile, getCurrentMonthKey } from '@/data/challenges';
+import { getProfileFromExperience, getProfileFromScore } from '@/data/profiles';
+import { getCurrentMonthKey } from '@/data/challenges';
 import { canCompleteChallenge, canCompleteLesson } from '@/lib/progress';
-import { getLevel } from '@/lib/analytics';
-import { getLessonById } from '@/data/lessons';
+import { getLessonById, getLessonsForProfile } from '@/data/lessons';
 import { recordedMoney } from '@/lib/financialSummary';
 import { isCardExpenseDue } from '@/lib/forecast';
 
@@ -34,8 +36,11 @@ function initialState(): AppState {
 }
 
 interface StoreActions {
+  saveCategoryPreferences: (definitions: CategoryDefinition[], preferences: JourneyPreferences) => void;
   init: () => Promise<void>;
-  completeOnboarding: (score: number) => void;
+  completeOnboarding: (score: number, preferences?: JourneyPreferences) => void;
+  updatePreferences: (preferences: JourneyPreferences) => void;
+  recordLearningAction: (action: LearningAction) => void;
   addTransaction: (t: Omit<Transaction, 'id'>) => string;
   restoreTransaction: (transaction: Transaction) => void;
   setMoneyContext: (openingBalance: number, incomePattern: 'regular' | 'irregular') => void;
@@ -51,6 +56,7 @@ interface StoreActions {
   addXp: (amount: number) => void;
   completeChallenge: (id: string) => void;
   completeLesson: (lessonId: string, answer?: number) => void;
+  reviewLesson: (lessonId: string, answer: number) => void;
   setBudget: (categoria: CategoryId, limite: number) => void;
   deleteBudget: (categoria: CategoryId) => void;
   addPlannedExpense: (item: Omit<PlannedExpense, 'id' | 'pagamentos' | 'status'>) => void;
@@ -93,12 +99,22 @@ function updateProfileFromExperience(onboarding: OnboardingState, xp: number): O
 
 export const useStore = create<Store>((set, get) => ({
   ...initialState(),
+  saveCategoryPreferences: (categoryDefinitions, preferences) => {
+    syncCategories(categoryDefinitions);
+    set({ categoryDefinitions, preferences });
+    get()._persist();
+  },
 
   init: async () => {
     void requestPersistentStorage();
     const saved = await loadState();
     if (saved) {
       const merged = { ...initialState(), ...saved };
+      if ((merged.openingBalance ?? 0) > 0) {
+        const earliest = [...merged.transactions].sort((a, b) => a.data.localeCompare(b.data))[0]?.data ?? localDateTime();
+        merged.transactions = withInitialBalance(merged.transactions, merged.transactions.find((item) => item.origem === 'saldo_inicial')?.valor ?? merged.openingBalance!, earliest);
+        merged.openingBalance = 0;
+      }
       merged.plannedExpenses = merged.plannedExpenses.map((expense) => ({ ...expense, pagamentos: expense.pagamentos ?? [], status: expense.status ?? 'ativo' }));
       const currentMonth = getCurrentMonthKey();
       merged.challenges = merged.challenges.filter((challenge) => !(challenge.mes === currentMonth && (challenge.teste || !challenge.nivelMinimo)));
@@ -115,20 +131,26 @@ export const useStore = create<Store>((set, get) => ({
       if (merged.onboarding.initialProfile === 'estrategista' || merged.onboarding.initialProfile === 'mestre') {
         merged.onboarding.initialProfile = 'construtor';
       }
+      syncCategories(merged.categoryDefinitions);
       set({ ...merged });
       get()._ensureMonthlyChallenges();
     }
   },
 
-  completeOnboarding: (score) => {
+  completeOnboarding: (score, preferences) => {
     const profile = getProfileFromScore(score);
-    const monthKey = getCurrentMonthKey();
-    const challenges = generateChallengesForProfile(profile, monthKey);
-    set((s) => ({
-      onboarding: { completed: true, score, profile, initialProfile: profile },
-      challenges,
-      challengeHistory: challenges.filter((challenge) => !challenge.teste).map((challenge) => ({ templateId: challenge.id.replace(`_${monthKey}`, ''), perfil: profile, mes: monthKey })),
-    }));
+    set((s) => ({ onboarding: { completed: true, score, profile, initialProfile: profile }, preferences: preferences ?? s.preferences }));
+    get()._ensureMonthlyChallenges();
+    get()._persist();
+  },
+  updatePreferences: (preferences) => {
+    set({ preferences });
+    get()._persist();
+  },
+  recordLearningAction: (action) => {
+    const date = localDateTime();
+    if (get().learningActions?.[action] === date) return;
+    set((s) => ({ learningActions: { ...s.learningActions, [action]: date } }));
     get()._persist();
   },
 
@@ -144,7 +166,7 @@ export const useStore = create<Store>((set, get) => ({
   },
   setMoneyContext: (openingBalance, incomePattern) => {
     if (!Number.isFinite(openingBalance) || openingBalance < 0) return;
-    set({ openingBalance: Math.round(openingBalance * 100) / 100, incomePattern });
+    set((s) => ({ openingBalance: 0, incomePattern, transactions: withInitialBalance(s.transactions, openingBalance, localDateTime()) }));
     get()._persist();
   },
 
@@ -168,6 +190,7 @@ export const useStore = create<Store>((set, get) => ({
     set((s) => {
       return { goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)), investments: [...s.investments, investment] };
     });
+    get().recordLearningAction('goal');
     get()._ensureMonthlyChallenges();
     get()._persist();
   },
@@ -183,6 +206,7 @@ export const useStore = create<Store>((set, get) => ({
         investments: goal?.investimentoId ? s.investments.map((item) => item.id === goal.investimentoId ? { ...item, valor: valorAtual } : item) : s.investments,
       };
     });
+    if (get().goals.find((item) => item.id === id)?.valorAtual === valorAtual) get().recordLearningAction('goal');
     get()._persist();
   },
 
@@ -247,16 +271,28 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
 
+  reviewLesson: (lessonId, answer) => {
+    const state = get();
+    const lesson = getLessonById(lessonId);
+    if (!lesson?.question || lesson.question.correct !== answer || !state.lessonProgress.some((item) => item.lessonId === lessonId && item.concluido)) return;
+    set((s) => ({ lessonReviews: { ...s.lessonReviews, [lessonId]: localDateTime() } }));
+    get()._persist();
+  },
+
   completeLesson: (lessonId, answer) => {
     set((s) => {
       const lesson = getLessonById(lessonId);
+      if (lessonId.startsWith('trail-')) {
+        const next = getLessonsForProfile(s.onboarding.profile ?? 'explorer', s.preferences?.focus).find((item) => !s.lessonProgress.some((entry) => entry.lessonId === item.id && entry.concluido));
+        if (next?.id !== lessonId) return s;
+      }
       if (lesson?.question && answer !== lesson.question.correct) return s;
       const existing = s.lessonProgress.find((l) => l.lessonId === lessonId);
       if (existing?.concluido || !canCompleteLesson(lessonId, s)) return s;
       const progress: LessonProgress = {
         lessonId,
         concluido: true,
-        concluidoEm: new Date().toISOString(),
+        concluidoEm: localDateTime(),
       };
       const xp = s.xp + (getLessonById(lessonId)?.xp ?? 15);
       return {
@@ -291,7 +327,6 @@ export const useStore = create<Store>((set, get) => ({
       const expense = s.plannedExpenses.find((item) => item.id === id);
       const paymentKey = date.slice(0, 10);
       if (!expense || (expense.pagamentos ?? []).includes(paymentKey)) return s;
-      const month = date.slice(0, 7);
       const paymentDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T12:00:00` : date;
       const parcelada = expense.recorrencia === 'parcelada';
       const nextInstallment = (expense.parcelaAtual ?? 1) + (parcelada ? 1 : 0);
@@ -329,6 +364,7 @@ export const useStore = create<Store>((set, get) => ({
           : [...s.budgets, budget],
       };
     });
+    get().recordLearningAction('budget');
     get()._persist();
   },
 
@@ -359,7 +395,8 @@ export const useStore = create<Store>((set, get) => ({
       clearTimeout(saveTimer);
       saveTimer = null;
     }
-    set({ ...initialState() });
+    syncCategories();
+    set({ ...initialState(), categoryDefinitions: [], preferences: undefined, openingBalance: undefined, incomePattern: undefined, learningActions: undefined, lessonReviews: undefined });
     await clearState();
   },
 
@@ -373,16 +410,10 @@ export const useStore = create<Store>((set, get) => ({
     const s = get();
     if (!s.onboarding.profile) return;
     const monthKey = getCurrentMonthKey();
-    const currentChallenges = s.challenges.filter((challenge) => challenge.mes === monthKey && challenge.perfil === s.onboarding.profile && !challenge.teste);
-    if (currentChallenges.length === 4) return;
-    const profileRank = getProfileRank(s.onboarding.profile);
-    const initialRank = s.onboarding.initialProfile ? getProfileRank(s.onboarding.initialProfile) : profileRank;
-    const level = getLevel(s.xp, profileRank, initialRank).level;
-    const newChallenges = generateChallengesForProfile(s.onboarding.profile, monthKey, level, s.challengeHistory);
-    if (newChallenges.length === 4) {
-      const history = [...s.challengeHistory, ...newChallenges.filter((challenge) => !challenge.teste).map((challenge) => ({ templateId: challenge.id.replace(`_${monthKey}`, ''), perfil: challenge.perfil, mes: monthKey }))];
-      set({ challenges: [...s.challenges, ...newChallenges], challengeHistory: history });
-      get()._persist();
-    }
+    const current = s.challenges.filter((item) => item.id.startsWith('journey-') && item.mes === monthKey);
+    if (current.length === 4) return;
+    const next = monthlyMissions(s.onboarding.profile, monthKey, s.preferences?.focus).map((item) => current.find((old) => old.id === item.id) ?? item);
+    set({ challenges: [...s.challenges.filter((item) => !(item.id.startsWith('journey-') && item.mes === monthKey)), ...next] });
+    get()._persist();
   },
 }));

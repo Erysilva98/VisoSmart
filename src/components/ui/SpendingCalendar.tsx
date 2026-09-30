@@ -1,3 +1,4 @@
+import { useStore } from '@/store/useStore';
 import { ChevronRight } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { CategoryIcon } from './CategoryIcon';
@@ -6,6 +7,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import type { Transaction } from '@/types';
 
 export function SpendingCalendar({ month, items, hidden = false, onAdd, onViewStatement }: { month: Date; items: Transaction[]; hidden?: boolean; onAdd: (date: string) => void; onViewStatement: () => void }) {
+  const recordLearningAction = useStore((state) => state.recordLearningAction);
   const [selected, setSelected] = useState<number | null>(null);
   const lastClick = useRef<{ day: number; time: number } | null>(null);
   const addOnDay = (day: number) => {
@@ -14,6 +16,7 @@ export function SpendingCalendar({ month, items, hidden = false, onAdd, onViewSt
   };
   const selectDay = (day: number) => {
     setSelected(day);
+    recordLearningAction('calendar');
     const now = performance.now();
     if (lastClick.current?.day === day && now - lastClick.current.time <= 500) {
       addOnDay(day);
@@ -33,7 +36,7 @@ export function SpendingCalendar({ month, items, hidden = false, onAdd, onViewSt
         const day = index + 1;
         const entries = forDay(day);
         const categories = [...new Set(entries.map((item) => item.categoria))];
-        return <button key={day} type="button" aria-pressed={selected === day} aria-label={`${day}: ${entries.length} registros`} onClick={() => selectDay(day)} onKeyDown={(event) => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); setSelected(day); addOnDay(day); } }} aria-keyshortcuts="Enter Space" title="Dois cliques ou Enter para adicionar" className={`touch-manipulation flex min-h-[66px] min-w-0 flex-col items-center gap-1 rounded-xl border py-1.5 text-xs transition-colors ${selected === day ? 'border-primary-400 bg-primary-50' : 'border-transparent hover:bg-ink-50'}`}><span>{day}</span><div className="flex flex-wrap items-center justify-center gap-0.5">{categories[0] && <CategoryIcon category={categories[0]} compact />}{categories.length > 1 && <span className="text-[8px] text-ink-500">+{categories.length - 1}</span>}</div><span className="flex gap-1" aria-hidden="true">{entries.some((item) => item.tipo === 'receita') && <span className="h-1 w-1 rounded-full bg-income" />}{entries.some((item) => item.tipo === 'despesa') && <span className="h-1 w-1 rounded-full bg-expense" />}</span></button>;
+        return <button key={day} type="button" aria-pressed={selected === day} aria-label={`${day}: ${entries.length} registros`} onClick={() => selectDay(day)} onKeyDown={(event) => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); recordLearningAction('calendar'); setSelected(day); addOnDay(day); } }} aria-keyshortcuts="Enter Space" title="Dois cliques ou Enter para adicionar" className={`touch-manipulation flex min-h-[66px] min-w-0 flex-col items-center gap-1 rounded-xl border py-1.5 text-xs transition-colors ${selected === day ? 'border-primary-400 bg-primary-50' : 'border-transparent hover:bg-ink-50'}`}><span>{day}</span><div className="flex flex-wrap items-center justify-center gap-0.5">{categories[0] && <CategoryIcon category={categories[0]} compact />}{categories.length > 1 && <span className="text-[8px] text-ink-500">+{categories.length - 1}</span>}</div><span className="flex gap-1" aria-hidden="true">{entries.some((item) => item.tipo === 'receita') && <span className="h-1 w-1 rounded-full bg-income" />}{entries.some((item) => item.tipo === 'despesa') && <span className="h-1 w-1 rounded-full bg-expense" />}</span></button>;
       })}
     </div>
     <div className="mt-2 flex gap-3 text-[10px] text-ink-500"><span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-income" />Receitas</span><span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-expense" />Despesas</span></div>

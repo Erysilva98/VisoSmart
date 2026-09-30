@@ -31,11 +31,13 @@ export function getTransactionView(transactions: Transaction[], filters: Transac
     if (filters.category && item.categoria !== filters.category) return false;
     return !query || normalizeSearch(item.descricao ?? '').includes(query) || normalizeSearch(CATEGORIES[item.categoria].nome).includes(query);
   }).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  let openingCents = 0;
   let incomeCents = 0;
   let expenseCents = 0;
   const categoryCents = new Map<CategoryId, number>();
   items.forEach((item) => {
     const cents = Math.round(item.valor * 100);
+    if (item.origem === 'saldo_inicial') openingCents += cents;
     if (item.tipo === 'receita') incomeCents += cents;
     else {
       expenseCents += cents;
@@ -43,5 +45,5 @@ export function getTransactionView(transactions: Transaction[], filters: Transac
     }
   });
   const categories = Array.from(categoryCents, ([categoria, cents]) => ({ categoria, valor: cents / 100 })).sort((a, b) => b.valor - a.valor);
-  return { items, income: incomeCents / 100, expenses: expenseCents / 100, balance: (incomeCents - expenseCents) / 100, categories };
+  return { initialBalance: openingCents / 100, items, income: incomeCents / 100, expenses: expenseCents / 100, balance: (incomeCents - expenseCents) / 100, categories };
 }

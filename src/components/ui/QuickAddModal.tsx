@@ -1,10 +1,11 @@
-import { transactionImpact } from '@/lib/financialSummary';
+import { Link } from 'react-router-dom';
+import { categoryOrder } from '@/lib/personalization';
 import { useEffect, useId, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ArrowLeft, ChevronRight, Clock3, Zap } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useStore } from '@/store/useStore';
-import { CATEGORIES, DESPESA_CATEGORIES, RECEITA_CATEGORIES } from '@/data/categories';
+import { CATEGORIES } from '@/data/categories';
 import type { CategoryId, Transaction, TransactionType } from '@/types';
 import { formatCurrency } from '@/lib/format';
 import { parseAmount } from '@/lib/money';
@@ -18,36 +19,13 @@ interface QuickAddModalProps {
 const QUICK_VALUES = [5, 10, 20, 50];
 
 export function QuickAddModal({ open, onClose, initialDate }: QuickAddModalProps) {
-  const [savedMessage, setSavedMessage] = useState('');
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const deleteTransaction = useStore((state) => state.deleteTransaction);
-
-  useEffect(() => {
-    if (!savedMessage) return;
-    const timer = window.setTimeout(() => setSavedMessage(''), 12000);
-    return () => window.clearTimeout(timer);
-  }, [savedMessage]);
-
-  return (
-    <>
-      <AnimatePresence>
-        {open && <QuickAddForm initialDate={initialDate} key="quick-add" onClose={onClose} onSaved={(message, id) => { setSavedMessage(message); setSavedId(id); }} />}
-      </AnimatePresence>
-      <div role="status" aria-live="polite" className="pointer-events-none fixed left-4 right-4 top-4 z-[80] mx-auto max-w-md">
-        {savedMessage && !open && (
-          <div className="pointer-events-auto flex items-start gap-2 rounded-2xl bg-primary-700 px-4 py-3 text-sm font-medium text-white shadow-lg">
-            <Check className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span className="flex-1">{savedMessage}</span>{savedId && <button type="button" className="min-h-11 text-xs font-semibold underline" onClick={() => { deleteTransaction(savedId); setSavedId(null); setSavedMessage('Registro desfeito.'); }}>Desfazer</button>}<button type="button" aria-label="Fechar confirmação" className="min-h-11 text-xs" onClick={() => setSavedMessage('')}>Fechar</button>
-          </div>
-        )}
-      </div>
-    </>
-  );
+  return <AnimatePresence>{open && <QuickAddForm initialDate={initialDate} key="quick-add" onClose={onClose} />}</AnimatePresence>;
 }
 
-function QuickAddForm({ onClose, onSaved, initialDate }: { initialDate?: string; onClose: () => void; onSaved: (message: string, id: string) => void }) {
+function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose: () => void }) {
   const addTransaction = useStore((s) => s.addTransaction);
   const transactions = useStore((s) => s.transactions);
+  const preferences = useStore((s) => s.preferences);
   const [allCategories, setAllCategories] = useState(false);
   const [step, setStep] = useState<'categoria' | 'valor'>('categoria');
   const [tipo, setTipo] = useState<TransactionType>('despesa');
@@ -65,7 +43,7 @@ function QuickAddForm({ onClose, onSaved, initialDate }: { initialDate?: string;
   const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const validDate = !initialDate || (/^\d{4}-\d{2}-\d{2}$/.test(initialDate) && initialDate <= localToday);
   const validAmount = Number.isFinite(amount) && amount > 0;
-  const cats = tipo === 'receita' ? RECEITA_CATEGORIES : DESPESA_CATEGORIES;
+  const cats = categoryOrder(tipo, preferences);
 
   const seen = new Set<string>();
   const recent = transactions
@@ -124,18 +102,13 @@ function QuickAddForm({ onClose, onSaved, initialDate }: { initialDate?: string;
     event.preventDefault();
     if (!validDate || savingRef.current || !categoria || !cats.includes(categoria) || !validAmount) return;
     savingRef.current = true;
-    const id = addTransaction({
+    addTransaction({
       tipo,
       valor: Math.round(amount * 100) / 100,
       categoria,
       data: `${initialDate ?? localToday}T12:00:00`,
       descricao: descricao.trim() || undefined,
     });
-    const state = useStore.getState();
-    const item = state.transactions.find((entry) => entry.id === id)!;
-    const impact = transactionImpact(item, state.transactions, state.budgets);
-    const detail = impact.kind === 'remaining' ? `Restam ${formatCurrency(impact.value)} do limite atual para essa categoria no mês do registro.` : impact.kind === 'over' ? `Essa categoria passou ${formatCurrency(impact.value)} do limite atual no mês do registro. Revise as próximas escolhas.` : impact.kind === 'count' ? `${impact.count} gastos nessa categoria no mês do registro: ${formatCurrency(impact.value)}.` : 'Conte com o dinheiro recebido ao planejar suas próximas escolhas.';
-    onSaved(`${tipo === 'despesa' ? 'Gasto' : 'Entrada'} de ${formatCurrency(amount)} registrado. ${detail}`, id);
     onClose();
   }
 
@@ -196,7 +169,7 @@ function QuickAddForm({ onClose, onSaved, initialDate }: { initialDate?: string;
 
             {step === 'categoria' ? (
               <section aria-label="Categorias">
-                <h3 className="mb-2 text-sm font-semibold text-ink-700">Escolha a categoria</h3>
+                <h3 className="mb-2 text-sm font-semibold text-ink-700">{preferences ? 'Minhas categorias' : 'Escolha a categoria'}</h3>
                 <div className="grid grid-cols-3 gap-2">
                   {(allCategories ? cats : cats.slice(0, 6)).map((catId) => (
                     <button key={catId} type="button" aria-pressed={categoria === catId} onClick={() => selectCategory(catId)}
@@ -206,6 +179,7 @@ function QuickAddForm({ onClose, onSaved, initialDate }: { initialDate?: string;
                     </button>
                   ))}
                 </div>
+                {cats.length === 0 && <p className="py-3 text-sm text-ink-500">Nenhuma categoria selecionada para este tipo. <Link to="/perfil" onClick={onClose} className="text-primary-700 underline">Escolher no Perfil</Link></p>}
                 {cats.length > 6 && <button type="button" onClick={() => setAllCategories(!allCategories)} className="mt-1 min-h-11 w-full text-xs font-semibold text-primary-700">{allCategories ? 'Mostrar menos categorias' : 'Mais categorias'}</button>}
               </section>
             ) : categoria && (
