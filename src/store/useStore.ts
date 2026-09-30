@@ -9,6 +9,7 @@ import { generateChallengesForProfile, getCurrentMonthKey } from '@/data/challen
 import { canCompleteChallenge, canCompleteLesson } from '@/lib/progress';
 import { getLevel } from '@/lib/analytics';
 import { getLessonById } from '@/data/lessons';
+import { recordedMoney } from '@/lib/financialSummary';
 import { isCardExpenseDue } from '@/lib/forecast';
 
 const DEFAULT_CARDS = ['saldo', 'entradas_saidas', 'gastos_categoria', 'score', 'metas'];
@@ -35,7 +36,9 @@ function initialState(): AppState {
 interface StoreActions {
   init: () => Promise<void>;
   completeOnboarding: (score: number) => void;
-  addTransaction: (t: Omit<Transaction, 'id'>) => void;
+  addTransaction: (t: Omit<Transaction, 'id'>) => string;
+  restoreTransaction: (transaction: Transaction) => void;
+  setMoneyContext: (openingBalance: number, incomePattern: 'regular' | 'irregular') => void;
   updateTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
   deleteTransaction: (id: string) => void;
   addGoal: (g: Omit<Goal, 'id' | 'criadaEm' | 'valorAtual'>) => void;
@@ -47,7 +50,7 @@ interface StoreActions {
   deleteInvestment: (id: string) => void;
   addXp: (amount: number) => void;
   completeChallenge: (id: string) => void;
-  completeLesson: (lessonId: string) => void;
+  completeLesson: (lessonId: string, answer?: number) => void;
   setBudget: (categoria: CategoryId, limite: number) => void;
   deleteBudget: (categoria: CategoryId) => void;
   addPlannedExpense: (item: Omit<PlannedExpense, 'id' | 'pagamentos' | 'status'>) => void;
@@ -105,6 +108,13 @@ export const useStore = create<Store>((set, get) => ({
         if (!merged.cardOrder.includes(cardId)) merged.cardOrder.push(cardId);
       }
       merged.onboarding = updateProfileFromExperience(merged.onboarding, merged.xp);
+      // Perfis legados avançados passam a fazer parte da etapa Planejador.
+      if (merged.onboarding.profile === 'estrategista' || merged.onboarding.profile === 'mestre') {
+        merged.onboarding.profile = 'construtor';
+      }
+      if (merged.onboarding.initialProfile === 'estrategista' || merged.onboarding.initialProfile === 'mestre') {
+        merged.onboarding.initialProfile = 'construtor';
+      }
       set({ ...merged });
       get()._ensureMonthlyChallenges();
     }
@@ -124,11 +134,17 @@ export const useStore = create<Store>((set, get) => ({
 
   addTransaction: (t) => {
     const transaction: Transaction = { ...t, id: uid() };
-    set((s) => {
-      const xp = s.xp + 5;
-      return { transactions: [transaction, ...s.transactions], xp, onboarding: updateProfileFromExperience(s.onboarding, xp) };
-    });
-    get()._ensureMonthlyChallenges();
+    set((s) => ({ transactions: [transaction, ...s.transactions] }));
+    get()._persist();
+    return transaction.id;
+  },
+  restoreTransaction: (transaction) => {
+    set((s) => s.transactions.some((item) => item.id === transaction.id) ? s : { transactions: [transaction, ...s.transactions] });
+    get()._persist();
+  },
+  setMoneyContext: (openingBalance, incomePattern) => {
+    if (!Number.isFinite(openingBalance) || openingBalance < 0) return;
+    set({ openingBalance: Math.round(openingBalance * 100) / 100, incomePattern });
     get()._persist();
   },
 
@@ -150,8 +166,7 @@ export const useStore = create<Store>((set, get) => ({
     const goal: Goal = { ...g, id: goalId, investimentoId: investmentId, criadaEm: new Date().toISOString(), valorAtual: 0 };
     const investment: Investment = { id: investmentId, nome: goal.titulo, valor: 0, criadoEm: goal.criadaEm, tipo: 'reserva', considerarDisponivel: false, metaId: goalId, icone: goal.icone };
     set((s) => {
-      const xp = s.xp + 30;
-      return { goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)), investments: [...s.investments, investment], xp, onboarding: updateProfileFromExperience(s.onboarding, xp) };
+      return { goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)), investments: [...s.investments, investment] };
     });
     get()._ensureMonthlyChallenges();
     get()._persist();
@@ -160,6 +175,9 @@ export const useStore = create<Store>((set, get) => ({
   updateGoal: (id, valorAtual) => {
     set((s) => {
       const goal = s.goals.find((item) => item.id === id);
+      if (!goal || !Number.isFinite(valorAtual) || valorAtual < 0 || valorAtual > goal.valorAlvo) return s;
+      const increase = Math.round((valorAtual - goal.valorAtual) * 100) / 100;
+      if (increase > 0 && increase > recordedMoney(s.transactions, s.goals, s.openingBalance).available) return s;
       return {
         goals: s.goals.map((g) => (g.id === id ? { ...g, valorAtual } : g)),
         investments: goal?.investimentoId ? s.investments.map((item) => item.id === goal.investimentoId ? { ...item, valor: valorAtual } : item) : s.investments,
@@ -229,8 +247,10 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
 
-  completeLesson: (lessonId) => {
+  completeLesson: (lessonId, answer) => {
     set((s) => {
+      const lesson = getLessonById(lessonId);
+      if (lesson?.question && answer !== lesson.question.correct) return s;
       const existing = s.lessonProgress.find((l) => l.lessonId === lessonId);
       if (existing?.concluido || !canCompleteLesson(lessonId, s)) return s;
       const progress: LessonProgress = {
@@ -345,17 +365,8 @@ export const useStore = create<Store>((set, get) => ({
 
   _persist: () => {
     const state = get();
-    const { init: _init, completeOnboarding: _co, addTransaction: _at, updateTransaction: _ut, deleteTransaction: _dt,
-      addGoal: _ag, updateGoal: _ug, deleteGoal: _dg, addInvestment: _ai, updateInvestment: _ui, deleteInvestment: _di, addXp: _ax, completeChallenge: _cc,
-      completeLesson: _cl, setBudget: _sb, deleteBudget: _db, addPlannedExpense: _ape, updatePlannedExpense: _upe, deletePlannedExpense: _dpe, payPlannedExpense: _ppe,
-      addCreditCard: _acc, updateCreditCard: _ucc, deleteCreditCard: _dcc, addCreditCardExpense: _acce, deleteCreditCardExpense: _dcce, payCreditCardInvoice: _pcci, toggleCard: _tc, reorderCards: _rc,
-      resetApp: _ra, _persist: _p, _ensureMonthlyChallenges: _emc,
-      ...rest
-    } = state;
-    void _init; void _co; void _at; void _ut; void _dt; void _ag; void _ug; void _dg;
-    void _ai; void _ui; void _di; void _ax; void _cc; void _cl; void _sb; void _db; void _ape; void _upe; void _dpe; void _ppe; void _acc; void _ucc; void _dcc; void _acce; void _dcce; void _pcci; void _tc; void _rc; void _ra;
-    void _p; void _emc;
-    scheduleSave(rest as AppState);
+    const data = Object.fromEntries(Object.entries(state).filter(([, value]) => typeof value !== 'function'));
+    scheduleSave(data as unknown as AppState);
   },
 
   _ensureMonthlyChallenges: () => {

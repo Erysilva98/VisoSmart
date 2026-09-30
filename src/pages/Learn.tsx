@@ -1,133 +1,21 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, Clock, Award, X, CheckCircle, BookOpen } from 'lucide-react';
+﻿import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Check, ChevronRight } from 'lucide-react';
 import { Layout } from '@/components/ui/Layout';
 import { useStore } from '@/store/useStore';
-import { getLessonsForProfile, type Lesson } from '@/data/lessons';
-import { canCompleteLesson, getLessonTask } from '@/lib/progress';
-import type { ProfileType } from '@/types';
+import { SIMPLE_LESSONS } from '@/data/simpleLessons';
+import { canCompleteLesson } from '@/lib/progress';
 
 export function Learn() {
-  const profile = useStore((s) => s.onboarding.profile) as ProfileType;
-  const lessonProgress = useStore((s) => s.lessonProgress);
-  const completeLesson = useStore((s) => s.completeLesson);
-  const transactions = useStore((s) => s.transactions);
-  const goals = useStore((s) => s.goals);
-  const budgets = useStore((s) => s.budgets);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const navigate = useNavigate();
-
-  const lessons = getLessonsForProfile(profile);
-
-  function isDone(id: string) {
-    return lessonProgress.some((l) => l.lessonId === id && l.concluido);
-  }
-
-  return (
-    <Layout title="Aprender">
-      <div className="p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl text-white mb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <GraduationCap className="w-5 h-5" />
-          <h2 className="font-bold">Trilha de Aprendizado</h2>
-        </div>
-        <p className="text-sm opacity-90">
-          {lessons.filter((l) => isDone(l.id)).length} de {lessons.length} aulas concluídas
-        </p>
-        <div className="h-2 bg-white/20 rounded-full overflow-hidden mt-2">
-          <div className="h-full bg-white rounded-full transition-all" style={{ width: `${(lessons.filter((l) => isDone(l.id)).length / lessons.length) * 100}%` }} />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {lessons.map((lesson, i) => {
-          const done = isDone(lesson.id);
-          return (
-            <motion.button
-              key={lesson.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              onClick={() => setActiveLesson(lesson)}
-              className="w-full text-left p-4 bg-white rounded-2xl shadow-card flex items-start gap-3"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${done ? 'bg-primary-100' : 'bg-ink-100'}`}>
-                {done ? <CheckCircle className="w-5 h-5 text-primary-600" /> : <BookOpen className="w-5 h-5 text-ink-500" />}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-ink-900 text-sm">{lesson.titulo}</h3>
-                {lesson.modulo && <p className="text-[10px] font-semibold text-primary-600 mt-0.5">{lesson.modulo} · Nível {lesson.nivel}</p>}
-                <p className="text-xs text-ink-500 mt-0.5 line-clamp-2">{lesson.descricao}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="flex items-center gap-1 text-xs text-ink-400">
-                    <Clock className="w-3 h-3" /> {lesson.duracao}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-primary-600 font-medium">
-                    <Award className="w-3 h-3" /> +{lesson.xp} XP
-                  </span>
-                </div>
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
-
-      <AnimatePresence>
-        {activeLesson && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setActiveLesson(null)}
-              className="fixed inset-0 bg-black/40 z-50"
-            />
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-x-4 top-[8.0625rem] z-50 bg-white rounded-3xl max-w-md mx-auto max-h-[82vh] overflow-y-auto safe-bottom"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-ink-100 sticky top-0 bg-white rounded-t-3xl">
-                <h2 className="font-bold text-ink-900">{activeLesson.titulo}</h2>
-                <button onClick={() => setActiveLesson(null)} className="p-1 text-ink-500">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="chip bg-ink-100 text-ink-600 text-xs">
-                    <Clock className="w-3 h-3" /> {activeLesson.duracao}
-                  </span>
-                  <span className="chip bg-primary-50 text-primary-700 text-xs">
-                    <Award className="w-3 h-3" /> +{activeLesson.xp} XP
-                  </span>
-                </div>
-                <p className="text-sm text-ink-700 leading-relaxed mb-4">{activeLesson.conteudo}</p>
-                {activeLesson.modulo && <p className="text-xs font-semibold text-primary-600 mb-3">{activeLesson.modulo} · Nível {activeLesson.nivel}</p>}
-                {!isDone(activeLesson.id) ? (
-                  <div className="space-y-3">
-                    {(() => {
-                      const task = getLessonTask(activeLesson.id);
-                      const completeReady = canCompleteLesson(activeLesson.id, { transactions, goals, budgets });
-                      return <><div className={`p-3 rounded-xl text-sm ${completeReady ? 'bg-primary-50 text-primary-800' : 'bg-ink-50 text-ink-700'}`}><p className="font-semibold mb-1">Atividade prática</p><p>{task.label}</p>{!completeReady && <button type="button" onClick={() => { setActiveLesson(null); navigate(task.path); }} className="mt-2 text-xs font-semibold text-primary-600">Realizar atividade</button>}</div>
-                    <button
-                      onClick={() => { completeLesson(activeLesson.id); setActiveLesson(null); }}
-                      disabled={!completeReady}
-                      className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <CheckCircle className="w-5 h-5" /> Concluir aula (+{activeLesson.xp} XP)
-                    </button>
-                      </>;
-                    })()}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 text-primary-600 font-semibold py-2">
-                    <CheckCircle className="w-5 h-5" /> Aula concluída
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </Layout>
-  );
+  const state = useStore();
+  const completed = new Set(state.lessonProgress.filter((item) => item.concluido).map((item) => item.lessonId));
+  const active = SIMPLE_LESSONS.find((item) => !completed.has(item.id));
+  const [review, setReview] = useState<string | null>(null);
+  const lesson = SIMPLE_LESSONS.find((item) => item.id === review) ?? active ?? SIMPLE_LESSONS[0];
+  return <Layout title="Aprender" compact><div className="mb-4"><h1 className="text-xl font-semibold">Uma descoberta de cada vez</h1><p className="mt-1 text-xs text-ink-500">Práticas curtas para decidir melhor, sem pontos ou competição.</p></div><p className="mb-3 text-xs text-ink-500">{SIMPLE_LESSONS.filter((item) => completed.has(item.id)).length} de {SIMPLE_LESSONS.length} descobertas concluídas</p>{!active && <p role="status" className="mb-4 rounded-xl bg-primary-50 p-3 text-sm text-primary-700">Você concluiu este percurso. Use o que aprendeu e revise quando precisar.</p>}<LessonCard key={lesson.id} lesson={lesson} done={completed.has(lesson.id)} ready={canCompleteLesson(lesson.id, state)} onComplete={(answer) => { state.completeLesson(lesson.id, answer); setReview(null); }} /><details className="mt-4 rounded-2xl border border-ink-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Ver o percurso</summary><div className="mt-2">{SIMPLE_LESSONS.map((item) => <button key={item.id} disabled={!completed.has(item.id) && item.id !== active?.id} onClick={() => setReview(item.id)} className="flex min-h-11 w-full items-center gap-2 text-left text-xs text-primary-700 disabled:text-ink-400">{completed.has(item.id) ? <Check className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}<span className="flex-1">{item.titulo}</span><ChevronRight className="h-3 w-3" /></button>)}</div></details></Layout>;
+}
+function LessonCard({ lesson, done, ready, onComplete }: { lesson: typeof SIMPLE_LESSONS[number]; done: boolean; ready: boolean; onComplete: (answer: number) => void }) {
+  const [answer, setAnswer] = useState<number | null>(null);
+  const correct = answer === lesson.question?.correct;
+  return <section className="rounded-2xl border border-ink-200 bg-white p-5"><p className="text-xs text-primary-700">{done ? 'Revisão' : 'Seu próximo passo'} · {lesson.duracao}</p><h2 className="mt-2 text-xl font-semibold">{lesson.titulo}</h2><p className="mt-4 text-sm leading-7 text-ink-600">{lesson.conteudo}</p><div className="mt-4 rounded-xl bg-ink-50 p-3"><p className="text-xs font-semibold">Experimente na sua vida</p><p className="mt-2 text-xs leading-relaxed text-ink-600">{lesson.desafioPratico?.descricao}</p><Link className="text-link mt-1" to={lesson.desafioPratico?.rota ?? '/dashboard'}>Abrir prática<ChevronRight className="h-3 w-3" /></Link>{ready && <p className="text-[11px] text-ink-500">Seu histórico já permite praticar. Confira a ideia abaixo.</p>}</div>{lesson.question && <fieldset className="mt-5"><legend className="mb-2 text-sm font-semibold">{lesson.question.text}</legend>{lesson.question.options.map((option, index) => <button type="button" key={option} aria-pressed={answer === index} onClick={() => setAnswer(index)} className={`mb-2 min-h-11 w-full rounded-xl border p-3 text-left text-xs ${answer === index ? 'border-primary-400 bg-primary-50 text-primary-800' : 'border-ink-200'}`}>{option}</button>)}{answer !== null && <p role="status" className="mt-2 text-xs leading-relaxed text-ink-600">{correct ? lesson.question.explanation : 'Vamos pensar de novo: ' + lesson.question.explanation}</p>}</fieldset>}{done ? <p className="mt-4 text-xs text-primary-700">Descoberta concluída. Você pode revisar sem repetir registros.</p> : <><button type="button" disabled={!ready || !correct} onClick={() => onComplete(answer!)} className="btn-primary mt-4 w-full text-sm">Concluir descoberta</button>{!ready && <p className="mt-2 text-xs text-ink-500">Pratique quando fizer sentido. Não crie registros fictícios para avançar.</p>}</>}</section>;
 }

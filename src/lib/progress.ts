@@ -61,6 +61,7 @@ export function canCompleteLesson(lessonId: string, state: Omit<ProgressState, '
   const hasSavingsPlan = state.budgets.some((item) => item.categoria === 'investimentos_economia');
   if (lesson?.desafioPratico) {
     const validations: Record<string, boolean> = {
+      despesa: expenses.length >= 1, receita: state.transactions.some((item) => item.tipo === 'receita'),
       transacao: state.transactions.length >= 1, categorias: new Set(expenses.map((item) => item.categoria)).size >= 2,
       meta: state.goals.length >= 1, orcamento: state.budgets.length >= 1, orcamentos_2: state.budgets.length >= 2, investimento: hasSavingsPlan,
     };

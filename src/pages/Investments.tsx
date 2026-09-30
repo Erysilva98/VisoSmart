@@ -1,6 +1,8 @@
+import { Dialog } from '@/components/ui/Dialog';
+import { parseAmount } from '@/lib/money';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PiggyBank, TrendingUp, Plus, Trash2, X, BookOpen, ChevronRight, ArrowLeftRight, Home, Bike, Plane, Sparkles, Target, Landmark, WalletCards, ShieldCheck } from 'lucide-react';
+import { PiggyBank, Plus, Trash2, X, BookOpen, ChevronRight, ArrowLeftRight, Home, Bike, Plane, Sparkles, Target, Landmark, WalletCards, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/ui/Layout';
 import { useStore } from '@/store/useStore';
@@ -49,7 +51,7 @@ export function Investments() {
   const groupedInvestments = [...investments].sort((first, second) => groupOrder.indexOf(getGroup(first)) - groupOrder.indexOf(getGroup(second)));
 
   function handleAdd() {
-    const amount = Number(valor.replace(',', '.'));
+    const amount = parseAmount(valor);
     if (!nome.trim() || !Number.isFinite(amount) || amount <= 0) return;
     addInvestment({ nome: nome.trim(), valor: amount, tipo, considerarDisponivel });
     setNome('');
@@ -59,15 +61,15 @@ export function Investments() {
 
   return (
     <Layout title="Carteira">
-      <section className="p-4 bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl text-white mb-4">
-        <div className="flex items-center gap-2 mb-1"><PiggyBank className="w-5 h-5" /><p className="text-sm opacity-90">Patrimônio financeiro</p></div>
-        <p className="text-3xl font-extrabold">{formatCurrency(total)}</p>
+      <section className="p-4 bg-white border border-ink-200 rounded-2xl text-ink-900 mb-4">
+        <div className="flex items-center gap-2 mb-1"><PiggyBank className="w-5 h-5" /><p className="text-sm opacity-90">Meu dinheiro guardado</p></div>
+        <p className="text-2xl font-semibold">{formatCurrency(total)}</p>
         <p className="text-xs opacity-75 mt-2">Saldo disponível para usar: {formatCurrency(available)}</p>
       </section>
 
       <section className="bg-white rounded-2xl shadow-card p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-ink-900">Minhas carteiras</h2>
+          <h2 className="font-bold text-ink-900">Meus investimentos</h2>
           {!showForm && <div className="flex gap-3"><button onClick={() => setShowTransfer(true)} disabled={investments.length < 2} className="text-sm text-ink-500 disabled:text-ink-300"><ArrowLeftRight className="w-4 h-4 inline mr-1" />Transferir</button><button onClick={() => setShowForm(true)} className="text-sm text-primary-600 font-medium flex items-center gap-1"><Plus className="w-4 h-4" /> Adicionar</button></div>}
         </div>
 
@@ -89,14 +91,13 @@ export function Investments() {
           })}
         </AnimatePresence>
 
-        {showForm && <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 p-3 bg-ink-50 rounded-xl space-y-3">
-          <div className="flex justify-between items-center"><h3 className="text-sm font-bold">Novo investimento</h3><button onClick={() => setShowForm(false)} aria-label="Fechar" className="text-ink-400"><X className="w-4 h-4" /></button></div>
-          <input value={nome} onChange={(event) => setNome(event.target.value)} placeholder="Nome do investimento" className="input" />
-          <input value={valor} onChange={(event) => setValor(event.target.value.replace(/[^0-9.,]/g, ''))} placeholder="Valor (R$)" inputMode="decimal" className="input" />
-          <select value={tipo} onChange={(event) => { const value = event.target.value as typeof tipo; setTipo(value); if (value === 'disponivel') setConsiderarDisponivel(true); }} className="input"><option value="investimento">Investimento</option><option value="reserva">Reserva de emergência</option><option value="disponivel">Saldo em conta</option></select>
-          <label className="flex items-center gap-2 text-sm text-ink-700"><input type="checkbox" checked={considerarDisponivel} onChange={(event) => setConsiderarDisponivel(event.target.checked)} /> Considerar no saldo disponível</label>
-          <button onClick={handleAdd} disabled={!nome.trim() || !valor} className="btn-primary w-full">Salvar investimento</button>
-        </motion.div>}
+        {showForm && <Dialog title="Novo investimento" onClose={() => setShowForm(false)}><form className="space-y-4" onSubmit={(event) => { event.preventDefault(); handleAdd(); }}>
+          <p className="text-xs text-ink-500">Dê um nome e informe quanto você já tem guardado.</p>
+          <label className="block text-xs font-semibold text-ink-600">Nome<input autoFocus value={nome} onChange={(event) => setNome(event.target.value)} placeholder="Ex.: minha reserva" className="input mt-2" /></label>
+          <label className="block text-xs font-semibold text-ink-600">Valor guardado (R$)<input value={valor} onChange={(event) => setValor(event.target.value)} placeholder="0,00" inputMode="decimal" className="input mt-2" /></label>
+          <details className="rounded-xl bg-ink-50 p-3"><summary className="cursor-pointer text-xs font-semibold text-primary-700">Mais opções (opcional)</summary><label className="mt-3 block text-xs">Tipo<select value={tipo} onChange={(event) => { const value = event.target.value as typeof tipo; setTipo(value); setConsiderarDisponivel(value === 'disponivel'); }} className="input mt-2"><option value="investimento">Investimento</option><option value="reserva">Reserva de emergência</option><option value="disponivel">Saldo em conta</option></select></label><label className="mt-3 flex items-center gap-2 text-xs text-ink-600"><input type="checkbox" checked={considerarDisponivel} onChange={(event) => setConsiderarDisponivel(event.target.checked)} />Incluir no saldo disponível para usar</label></details>
+          <button type="submit" disabled={!nome.trim() || !Number.isFinite(parseAmount(valor)) || parseAmount(valor) <= 0} className="btn-primary w-full">Salvar investimento</button>
+        </form></Dialog>}
       </section>
 
       {showTransfer && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4"><div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl"><div className="flex justify-between items-center"><h2 className="font-bold">Transferir entre carteiras</h2><button onClick={() => setShowTransfer(false)}><X className="text-ink-400" /></button></div><select value={originId} onChange={(event) => setOriginId(event.target.value)} className="input mt-4"><option value="">Origem</option>{investments.map((item) => <option key={item.id} value={item.id}>{item.nome} — {formatCurrency(item.valor)}</option>)}</select><select value={destinationId} onChange={(event) => setDestinationId(event.target.value)} className="input mt-3"><option value="">Destino</option>{investments.filter((item) => item.id !== originId).map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select><input value={transferValue} onChange={(event) => setTransferValue(event.target.value.replace(/[^0-9.,]/g, ''))} inputMode="decimal" placeholder="Valor (R$)" className="input mt-3"/><button disabled={!originId || !destinationId || !Number(transferValue.replace(',', '.')) || originId === destinationId} onClick={() => { const amount = Number(transferValue.replace(',', '.')); const origin = investments.find((item) => item.id === originId); const destination = investments.find((item) => item.id === destinationId); if (!origin || !destination || amount <= 0 || amount > origin.valor) return; updateInvestment(origin.id, { valor: origin.valor - amount }); updateInvestment(destination.id, { valor: destination.valor + amount }); setShowTransfer(false); setOriginId(''); setDestinationId(''); setTransferValue(''); }} className="btn-primary w-full mt-4">Transferir</button></div></div>}

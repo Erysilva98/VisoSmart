@@ -3,6 +3,7 @@ export type ProfileType = 'explorer' | 'equilibrado' | 'construtor' | 'estrategi
 export type TransactionType = 'receita' | 'despesa';
 
 export type CategoryId =
+  | 'mesada' | 'estagio' | 'bolsa' | 'freelas' | 'presentes' | 'compras' | 'assinaturas' | 'jogos'
   | 'alimentacao'
   | 'transporte'
   | 'moradia'
@@ -138,6 +139,8 @@ export interface Budget {
 }
 
 export interface AppState {
+  openingBalance?: number;
+  incomePattern?: 'regular' | 'irregular';
   onboarding: OnboardingState;
   transactions: Transaction[];
   goals: Goal[];

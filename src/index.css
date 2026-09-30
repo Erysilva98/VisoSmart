@@ -143,3 +143,42 @@ body {
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Nexo: superfícies neutras e cor reservada para orientação e progresso. */
+@layer base {
+  body { letter-spacing: -0.015em; }
+  h1, h2, h3 { letter-spacing: -0.035em; }
+  button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, summary:focus-visible {
+    outline: 3px solid #35699D;
+    outline-offset: 4px;
+  }
+}
+@layer components {
+  .surface { @apply rounded-3xl border border-ink-200/70 bg-white shadow-card; }
+  .eyebrow { @apply text-[10px] font-bold uppercase tracking-[0.16em] text-ink-500; }
+  .page-title { @apply text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl; }
+  .page-copy { @apply mt-2 text-sm leading-relaxed text-ink-500; }
+  .text-link { @apply inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-primary-700 hover:text-primary-800; }
+  .btn-primary { @apply min-h-12 shadow-sm; }
+  .btn-secondary { @apply min-h-12 border border-ink-200 bg-white hover:bg-ink-50; }
+}
+.journey-grid {
+  background-image: radial-gradient(#D4C9FF 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Traços arredondados do sistema de ícones Nexo. */
+.lucide { stroke-width: 1.8; }
+
+/* Convite breve ao aprendizado, sem movimento contínuo. */
+@media (prefers-reduced-motion: no-preference) {
+  .learn-shortcut { animation: learn-invite 1.2s ease-in-out 0.3s 2; }
+}
+@keyframes learn-invite {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-3px) scale(1.12); box-shadow: 0 0 0 5px rgba(36, 87, 137, 0.08); }
+}

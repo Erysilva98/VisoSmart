@@ -1,170 +1,26 @@
-﻿import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import {
-  Trophy, Target, RotateCcw, Award, CheckCircle, Circle,
-  Wallet,
-} from 'lucide-react';
-import { Layout, XpProgressInfo } from '@/components/ui/Layout';
+﻿import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Download, SlidersHorizontal, ArrowLeft, Trash2 } from 'lucide-react';
+import { Layout } from '@/components/ui/Layout';
+import { Dialog } from '@/components/ui/Dialog';
 import { useStore } from '@/store/useStore';
-import { PROFILES } from '@/data/profiles';
-import { CATEGORIES } from '@/data/categories';
-import { getMonthName } from '@/lib/format';
-import { canCompleteChallenge, getChallengeProgress } from '@/lib/progress';
-import type { CategoryId } from '@/types';
+import { parseAmount } from '@/lib/money';
+import { formatCurrency } from '@/lib/format';
 
 export function Profile() {
-  const {
-    onboarding, xp, challenges, goals, transactions, budgets, lessonProgress,
-    completeChallenge, resetApp,
-  } = useStore();
-
-  const [showBudget, setShowBudget] = useState(false);
-  const [showResetDialog, setShowResetDialog] = useState(false);
-  const [budgetCat, setBudgetCat] = useState<CategoryId>('alimentacao');
-  const [budgetVal, setBudgetVal] = useState('');
-
-  const profile = onboarding.profile!;
-  const config = PROFILES[profile];
+  const state = useStore();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if ((location.state as { section?: string } | null)?.section === 'desafios') {
-      document.getElementById('desafios-mensais')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [location.state]);
-
-  const monthChallenges = challenges.filter((c) => c.mes === `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
-  const doneChallenges = monthChallenges.filter((c) => c.concluido).length;
-  const totalCompletedChallenges = challenges.filter((c) => c.concluido).length;
-
-  async function handleResetConfirmed() {
-    await resetApp();
-    navigate('/', { replace: true });
+  const [balance, setBalance] = useState(String(state.openingBalance ?? 0));
+  const [pattern, setPattern] = useState<'regular' | 'irregular'>(state.incomePattern ?? 'irregular');
+  const [message, setMessage] = useState('');
+  const [reset, setReset] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const amount = parseAmount(balance);
+  const archived = state.investments.filter((item) => !item.metaId);
+  function exportData() {
+    const data = Object.fromEntries(Object.entries(useStore.getState()).filter(([, value]) => typeof value !== 'function'));
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a'); link.href = url; link.download = `nexo-${new Date().toISOString().slice(0, 10)}.json`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-
-  function handleReset() {
-    if (confirm('Tem certeza? Todos os dados serão apagados permanentemente.')) {
-      resetApp();
-      window.location.hash = '#/';
-    }
-  }
-
-  return (
-    <Layout title="Perfil">
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
-        <div className="p-3 bg-white rounded-2xl shadow-card text-center">
-          <Trophy className="w-5 h-5 text-warning mx-auto mb-1" />
-          <p className="text-lg font-bold text-ink-900">{xp}</p>
-          <p className="text-[10px] text-ink-400">XP Total</p>
-        </div>
-        <div className="p-3 bg-white rounded-2xl shadow-card text-center">
-          <Award className="w-5 h-5 text-primary-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-ink-900">{totalCompletedChallenges}</p>
-          <p className="text-[10px] leading-tight text-ink-400">Concluídos</p>
-        </div>
-        <div className="p-3 bg-white rounded-2xl shadow-card text-center">
-          <Target className="w-5 h-5 text-primary-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-ink-900">{goals.length}</p>
-          <p className="text-[10px] text-ink-400">Metas</p>
-        </div>
-        <div className="p-3 bg-white rounded-2xl shadow-card text-center">
-          <Wallet className="w-5 h-5 text-accent-600 mx-auto mb-1" />
-          <p className="text-lg font-bold text-ink-900">{transactions.length}</p>
-          <p className="text-[10px] text-ink-400">Transações</p>
-        </div>
-      </div>
-
-      {/* Monthly Challenges */}
-      <motion.div
-        id="desafios-mensais"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white rounded-2xl shadow-card p-4 mb-4"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-primary-600" />
-            <h2 className="font-bold text-ink-900 text-sm">Desafios de {getMonthName()}</h2>
-          </div>
-          <span className="text-xs text-ink-500">{doneChallenges}/{monthChallenges.length}</span>
-        </div>
-        <div className="space-y-2">
-          {monthChallenges.map((c) => {
-            const state = { transactions, goals, budgets, lessonProgress };
-            const eligible = canCompleteChallenge(c, state);
-            const progress = getChallengeProgress(c, state);
-            return (
-            <div
-              key={c.id}
-              className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                c.concluido ? 'bg-primary-50' : 'bg-ink-50'
-              }`}
-            >
-              {c.concluido ? (
-                <CheckCircle className="w-5 h-5 text-primary-600 shrink-0" />
-              ) : (
-                <Circle className="w-5 h-5 text-ink-300 shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${c.concluido ? 'text-primary-700' : 'text-ink-800'}`}>
-                  {c.titulo}
-                </p>
-                <p className="text-xs text-ink-400">{c.descricao}</p>
-                {!c.concluido && <p className="text-[11px] text-ink-500 mt-1">Progresso: {progress.current}/{progress.target}</p>}
-              </div>
-              <span className="text-xs font-semibold text-primary-600 shrink-0">+{c.xp}</span>
-              {!c.concluido && (
-                <button
-                  onClick={() => completeChallenge(c.id)}
-                  disabled={!eligible}
-                  className={`text-xs font-medium shrink-0 ${eligible ? 'text-primary-600 hover:underline' : 'text-ink-400 cursor-not-allowed'}`}
-                >
-                  {eligible ? 'Concluir' : 'Em andamento'}
-                </button>
-              )}
-            </div>
-          );
-          })}
-        </div>
-      </motion.div>
-
-      {/* XP Rules */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-white rounded-2xl shadow-card p-4 mb-4"
-      >
-        <XpProgressInfo />
-      </motion.div>
-
-      {/* Reset */}
-      <button
-        onClick={() => setShowResetDialog(true)}
-        className="w-full flex items-center justify-center gap-2 p-3 text-danger text-sm font-medium hover:bg-red-50 rounded-2xl transition-colors"
-      >
-        <RotateCcw className="w-4 h-4" /> Recomeçar (apagar todos os dados)
-      </button>
-      {showResetDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/40 p-4" role="dialog" aria-modal="true" aria-labelledby="reset-title">
-          <motion.div initial={{ opacity: 0, scale: 0.96, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <h2 id="reset-title" className="text-lg font-bold text-ink-900">Recomeçar aplicativo?</h2>
-            <p className="mt-2 text-sm text-ink-600">Seu perfil, gastos, contas, metas, investimentos, orçamentos e progresso serão apagados permanentemente.</p>
-            <div className="mt-5 flex gap-3">
-              <button onClick={() => setShowResetDialog(false)} className="btn-ghost flex-1">Cancelar</button>
-              <button onClick={handleResetConfirmed} className="flex-1 rounded-xl bg-danger px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90">Apagar tudo</button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </Layout>
-  );
+  return <Layout title="Meu perfil" compact><h1 className="mb-4 text-xl font-semibold">Seu dinheiro, do seu jeito</h1><form className="space-y-4 rounded-2xl border border-ink-200 bg-white p-4" onSubmit={(event) => { event.preventDefault(); if (!Number.isFinite(amount) || amount < 0) return; state.setMoneyContext(amount, pattern); setMessage('Informações salvas. O saldo inicial não conta como receita do mês.'); }}><label className="block text-xs font-semibold">Como o dinheiro chega?<select value={pattern} onChange={(event) => setPattern(event.target.value as typeof pattern)} className="input mt-2"><option value="regular">Recebo regularmente</option><option value="irregular">Recebo de vez em quando ou o valor varia</option></select></label><label className="block text-xs font-semibold">Quanto você já tinha antes do primeiro registro?<input value={balance} onChange={(event) => setBalance(event.target.value)} className="input mt-2" inputMode="decimal" placeholder="0,00" /></label><p className="text-xs leading-relaxed text-ink-500">Informe o dinheiro que já existia antes de usar o app, incluindo o que já estava reservado em metas. Não repita entradas do extrato. Não inclua o valor de bens ou de investimentos arquivados.</p><button disabled={!Number.isFinite(amount) || amount < 0} className="btn-primary text-sm">Salvar informações</button>{message && <p role="status" className="text-xs text-primary-700">{message}</p>}</form><Link to="/orcamentos" className="mt-3 flex min-h-14 items-center gap-3 rounded-2xl border border-ink-200 bg-white px-4 text-sm font-semibold text-primary-700"><SlidersHorizontal className="h-4 w-4" />Meus limites de gastos</Link><section className="mt-3 rounded-2xl border border-ink-200 bg-white p-4"><h2 className="text-sm font-semibold">Seus dados</h2><p className="mt-2 text-xs leading-relaxed text-ink-500">Os registros ficam neste dispositivo. Limpar os dados do navegador pode apagá-los. Baixe uma cópia para consulta; esta versão ainda não restaura arquivos automaticamente.</p><button type="button" onClick={exportData} className="text-link"><Download className="h-4 w-4" />Baixar cópia dos dados</button></section>{(archived.length > 0 || state.plannedExpenses.length > 0 || state.creditCards.length > 0) && <details className="mt-3 rounded-2xl border border-ink-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Dados da versão anterior</summary><p className="mt-3 text-xs leading-relaxed text-ink-500">Carteira, cartões e previsões foram desanexados. Os dados foram preservados e estão na cópia para download. Compromissos antigos não são descontados do saldo; registre os pagamentos reais no extrato uma única vez.</p>{archived.map((item) => <p key={item.id} className="mt-2 flex justify-between gap-2 text-xs"><span>{item.nome}</span><span>{formatCurrency(item.valor)}</span></p>)}<p className="mt-2 text-xs text-ink-500">{state.plannedExpenses.length} compromissos e {state.creditCards.length} cartões arquivados.</p></details>}<button type="button" onClick={() => setReset(true)} className="mt-4 flex min-h-11 items-center gap-2 text-xs text-expense"><Trash2 className="h-4 w-4" />Apagar meus dados</button><Link to="/dashboard" className="text-link"><ArrowLeft className="h-3 w-3" />Voltar ao início</Link>{reset && <Dialog title="Apagar todos os dados?" onClose={() => setReset(false)}><p className="text-sm text-ink-500">Essa ação remove registros, metas e histórico deste dispositivo e não pode ser desfeita.</p><div className="mt-4 flex gap-2"><button className="btn-secondary flex-1" onClick={() => setReset(false)}>Cancelar</button><button disabled={busy} className="btn flex-1 bg-expense p-3 text-white" onClick={async () => { setBusy(true); try { await state.resetApp(); navigate('/'); } catch { setMessage('Não foi possível apagar. Tente novamente.'); setReset(false); } finally { setBusy(false); } }}>Apagar</button></div></Dialog>}</Layout>;
 }
-
-
-
-

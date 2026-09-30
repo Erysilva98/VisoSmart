@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
@@ -23,44 +23,37 @@ export default defineConfig({
         launch_handler: {
           client_mode: 'navigate-existing',
         },
-        name: 'FinEdu Wallet',
-        short_name: 'FinEdu',
-        description: 'Seu personal trainer financeiro. Entenda seu dinheiro, crie melhores hábitos, evolua financeiramente.',
-        theme_color: '#16a34a',
-        background_color: '#ffffff',
+        name: 'Nexo',
+        short_name: 'Nexo',
+        description: 'Pequenos passos, grandes conquistas. Aprenda. Organize. Evolua.',
+        theme_color: '#111936',
+        background_color: '#111936',
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         orientation: 'any',
         start_url: './',
         scope: './',
-        screenshots: [
-          {
-            src: 'screenshot-dashboard.png',
-            sizes: '941x1672',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'Painel financeiro do FinEdu Wallet',
-          },
-        ],
         shortcuts: [
           {
             name: 'Abrir painel',
             short_name: 'Painel',
-            description: 'Abrir o painel financeiro do FinEdu Wallet',
+            description: 'Abrir o painel financeiro do Nexo',
             url: './',
-            icons: [{ src: 'icon-wallet.png', sizes: '1254x1254', type: 'image/png' }],
+            icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },{ src: 'icon-512.png', sizes: '512x512', type: 'image/png' }],
           },
         ],
         icons: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           {
-            src: 'icon-wallet.png',
-            sizes: '1254x1254',
+            src: 'icon-512.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'icon-wallet.png',
-            sizes: '1254x1254',
+            src: 'icon-512-maskable.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
           },
