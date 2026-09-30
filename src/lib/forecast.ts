@@ -48,7 +48,7 @@ export function getOccurrencesInMonth(item: PlannedExpense, month: string): stri
   const due = new Date(`${item.vencimento}T12:00:00`);
   const interval = item.recorrencia === 'semanal' ? 7 : 15;
   const dates: string[] = [];
-  let cursor = new Date(due);
+  const cursor = new Date(due);
   while (cursor < new Date(year, value - 1, 1, 12)) cursor.setDate(cursor.getDate() + interval);
   while (cursor <= end) { dates.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`); cursor.setDate(cursor.getDate() + interval); }
   return dates;

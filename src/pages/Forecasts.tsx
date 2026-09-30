@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, ReceiptText, Trash2, CheckCircle2, Clock3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, ReceiptText, Trash2, Clock3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Layout } from '@/components/ui/Layout';
 import { useStore } from '@/store/useStore';
 import { getMonthlyForecast, getMonthKey, getOccurrencesInMonth } from '@/lib/forecast';
@@ -11,7 +11,7 @@ type FormState = { titulo: string; categoria: CategoryId | ''; valor: string; ti
 const emptyForm = (month: string): FormState => ({ titulo: '', categoria: '', valor: '', tipo: 'avulsa', recorrencia: 'unica', vencimento: `${month}-10`, quantidade: '' });
 
 export function Forecasts() {
-  const { plannedExpenses, addPlannedExpense, updatePlannedExpense, deletePlannedExpense, payPlannedExpense } = useStore();
+  const { plannedExpenses, addPlannedExpense, updatePlannedExpense, payPlannedExpense } = useStore();
   const [open, setOpen] = useState(false); const [payableOpen, setPayableOpen] = useState(false); const [deleteTarget, setDeleteTarget] = useState<{ id: string; dueDate: string; recurring: boolean } | null>(null); const [formOpen, setFormOpen] = useState(false); const [date, setDate] = useState(new Date());
   const month = getMonthKey(date); const forecast = getMonthlyForecast(plannedExpenses, [], [], month); const [form, setForm] = useState<FormState>(() => emptyForm(month));
   const periodActive = form.tipo === 'fixa' || form.tipo === 'divida';
