@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ArrowLeft, ChevronRight, Clock3, Zap } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useStore } from '@/store/useStore';
+import { showNotice } from '@/lib/uiNotice';
 import { CATEGORIES } from '@/data/categories';
 import type { CategoryId, Transaction, TransactionType } from '@/types';
 import { formatCurrency } from '@/lib/format';
@@ -105,7 +106,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
     event.preventDefault();
     if (!validDate || savingRef.current || !categoria || !cats.includes(categoria) || !validAmount) return;
     savingRef.current = true;
-    addTransaction({
+    const transactionId = addTransaction({
       tipo,
       valor: Math.round(amount * 100) / 100,
       categoria,
@@ -113,6 +114,11 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
       descricao: descricao.trim() || undefined,
     });
     onClose();
+    showNotice({
+      message: `${tipo === 'receita' ? 'Entrada' : 'Despesa'} de ${formatCurrency(amount)} em ${CATEGORIES[categoria].nome} registrada.`,
+      actionLabel: 'Desfazer',
+      onAction: () => useStore.getState().deleteTransaction(transactionId),
+    });
   }
 
   return (

@@ -10,6 +10,7 @@ import { Goals } from '@/pages/Goals';
 import { Learn } from '@/pages/Learn';
 import { Profile } from '@/pages/Profile';
 import { Budgets } from '@/pages/Budgets';
+import { AppFeedback } from '@/components/ui/AppFeedback';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const onboarding = useStore((s) => s.onboarding);
@@ -24,10 +25,13 @@ function AppRoutes() {
   const init = useStore((s) => s.init);
   const onboarding = useStore((s) => s.onboarding);
   const [ready, setReady] = useState(false);
+  const [initError, setInitError] = useState(false);
 
   useEffect(() => {
-    void init().finally(() => setReady(true));
+    void init().then(() => setReady(true)).catch(() => setInitError(true));
   }, [init]);
+
+  if (initError) return <main className="flex min-h-screen items-center justify-center bg-ink-50 p-6"><div role="alert" className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-card"><h1 className="text-lg font-semibold">Não foi possível abrir seus dados</h1><p className="mt-2 text-sm text-ink-600">Seus registros não foram apagados. Tente abrir novamente.</p><button type="button" onClick={() => { setInitError(false); void init().then(() => setReady(true)).catch(() => setInitError(true)); }} className="btn-primary mt-4 w-full">Tentar novamente</button></div></main>;
 
   if (!ready) {
     return (
@@ -60,6 +64,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user"><HashRouter>
       <AppRoutes />
+      <AppFeedback />
     </HashRouter></MotionConfig>
   );
 }
