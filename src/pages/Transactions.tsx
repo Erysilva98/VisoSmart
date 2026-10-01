@@ -61,7 +61,7 @@ export function Transactions() {
         <button type="button" onClick={() => setFilter(filter === 'receita' ? 'all' : 'receita')} aria-pressed={filter === 'receita'} className={`p-3 text-left sm:p-4 ${filter === 'receita' ? 'bg-green-50' : 'hover:bg-ink-50'}`}><span className="flex items-center gap-1 text-[11px] text-ink-500"><ArrowDownLeft className="h-3 w-3 text-income" />Entrou no mês</span><span className="mt-1 block text-lg font-semibold text-income" data-month-income>{formatCurrency(monthView.income)}</span></button>
         <button type="button" onClick={() => setFilter(filter === 'despesa' ? 'all' : 'despesa')} aria-pressed={filter === 'despesa'} className={`p-3 text-left sm:p-4 ${filter === 'despesa' ? 'bg-red-50' : 'hover:bg-ink-50'}`}><span className="flex items-center gap-1 text-[11px] text-ink-500"><ArrowUpRight className="h-3 w-3 text-expense" />Saiu no mês</span><span className="mt-1 block text-lg font-semibold text-expense" data-month-expenses>{formatCurrency(monthView.expenses)}</span></button>
       </div>
-      <div className="border-t border-ink-100 px-3 py-2 sm:px-4"><p className="text-[10px] text-ink-500">{monthView.initialBalance > 0 && <>Saldo inicial: {formatCurrency(monthView.initialBalance)}. </>}Totais do mês inteiro</p></div>
+      <div className="border-t border-ink-100 px-3 py-2 sm:px-4"><p className="text-[10px] text-ink-500">{monthView.carriedBalance !== 0 && <>Saldo do mês anterior: {formatCurrency(monthView.carriedBalance)}. </>}{monthView.initialBalance !== 0 && <>Saldo inicial: {formatCurrency(monthView.initialBalance)}. </>}Totais do mês inteiro</p></div>
     </section>
 
     <div className="mb-3 space-y-2">
