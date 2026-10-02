@@ -6,9 +6,9 @@ import type { ProfileType } from '@/types';
 export function NexoMark({ className = '' }: { className?: string }) {
   const gradient = useId();
   return <svg viewBox="0 0 100 100" fill="none" aria-hidden="true" className={className}>
-    <defs><linearGradient id={gradient} x1="20" y1="80" x2="78" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#7C5CFF" /><stop offset="1" stopColor="#4FA3FF" /></linearGradient></defs>
+    <defs><linearGradient id={gradient} x1="20" y1="80" x2="78" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#7A63FE" /><stop offset="1" stopColor="#56B8FF" /></linearGradient></defs>
     <path d="M22 77 32 31 Q33 26 37 31 L65 70 Q69 76 71 68 L77 42" stroke={`url(#${gradient})`} strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="81" cy="22" r="9" fill="#4FA3FF" />
+    <circle cx="81" cy="22" r="9" fill="#56B8FF" />
   </svg>;
 }
 

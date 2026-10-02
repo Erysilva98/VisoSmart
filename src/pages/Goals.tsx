@@ -10,12 +10,12 @@ import { formatCurrency } from '@/lib/format';
 import { parseAmount } from '@/lib/money';
 
 const GOAL_ICONS = [
-  { id: 'Headphones', label: 'Fone', icon: Headphones, color: '#7C5CFF' },
-  { id: 'Smartphone', label: 'Celular', icon: Smartphone, color: '#2476CE' },
+  { id: 'Headphones', label: 'Fone', icon: Headphones, color: '#7A63FE' },
+  { id: 'Smartphone', label: 'Celular', icon: Smartphone, color: '#4F6DFF' },
   { id: 'Plane', label: 'Viagem', icon: Plane, color: '#C25E08' },
-  { id: 'Laptop', label: 'Notebook', icon: Laptop, color: '#245789' },
+  { id: 'Laptop', label: 'Notebook', icon: Laptop, color: '#3C53D9' },
   { id: 'Bike', label: 'Bicicleta', icon: Bike, color: '#15803D' },
-  { id: 'BookOpen', label: 'Estudos', icon: BookOpen, color: '#245789' },
+  { id: 'BookOpen', label: 'Estudos', icon: BookOpen, color: '#3C53D9' },
   { id: 'Sparkles', label: 'Outro', icon: Sparkles, color: '#BE185D' },
 ];
 

@@ -9,7 +9,7 @@ const formatDate = (value: string) => new Date(value.length === 10 ? `${value}T1
 
 export function createFinancialReport(state: AppState) {
   const doc = new jsPDF({ compress: true });
-  doc.setProperties({ title: 'Nexo - Relatório financeiro', author: 'Nexo', subject: 'Saldo, metas e registros financeiros' });
+  doc.setProperties({ title: 'NYX - Relatório financeiro', author: 'NYX', subject: 'Saldo, metas e registros financeiros' });
   let y = 20;
   const money = (amount: number) => formatCurrency(amount).replace(/\u00a0/g, ' ');
   function pageSpace(height: number) { if (y + height > 276) { doc.addPage(); y = 20; } }
@@ -19,7 +19,7 @@ export function createFinancialReport(state: AppState) {
     for (const line of lines) { pageSpace(size * 0.45 + 2); doc.text(line, 18, y); y += size * 0.45 + 1.5; }
   }
   function heading(value: string) { pageSpace(22); y += 5; text(value, 14, true); y += 2; }
-  text('Nexo', 24, true);
+  text('NYX', 24, true);
   text('Seu relatório financeiro', 16);
   text(`Emitido em ${new Date().toLocaleDateString('pt-BR')} · Todo o histórico registrado`, 9);
   const ordered = [...state.transactions].sort((a, b) => a.data.localeCompare(b.data));
@@ -46,7 +46,7 @@ export function createFinancialReport(state: AppState) {
     text(`Guardado: ${money(goal.valorAtual)} de ${money(goal.valorAlvo)}. Falta: ${money(Math.max(0, goal.valorAlvo - goal.valorAtual))}.`);
     text(goal.prazo ? `Prazo: ${formatDate(goal.prazo)}` : goal.meses ? `Planejamento: ${goal.meses} meses` : 'Prazo não definido.', 9);
     doc.setFillColor('#E7EAF3'); doc.roundedRect(18, y, 174, 2, 1, 1, 'F');
-    if (percent > 0) { doc.setFillColor('#2476ce'); doc.rect(18, y, 174 * percent / 100, 2, 'F'); }
+    if (percent > 0) { doc.setFillColor('#4F6DFF'); doc.rect(18, y, 174 * percent / 100, 2, 'F'); }
     y += 8;
   });
   heading('Gastos por categoria');
@@ -79,11 +79,11 @@ export function createFinancialReport(state: AppState) {
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page++) {
     doc.setPage(page); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor('#667085');
-    doc.text(`Nexo · Dados deste dispositivo · ${page}/${pages}`, 18, 287);
+    doc.text(`NYX · Dados deste dispositivo · ${page}/${pages}`, 18, 287);
   }
   return doc;
 }
 
 export function downloadFinancialReport(state: AppState) {
-  createFinancialReport(state).save(`nexo-relatorio-${new Date().toISOString().slice(0, 10)}.pdf`);
+  createFinancialReport(state).save(`nyx-relatorio-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

@@ -67,7 +67,7 @@ export const PROFILES: Record<ProfileType, ProfileConfig> = {
     id: 'equilibrado',
     nome: 'Equilibrado',
     descricao: 'Organização',
-    cor: '#7C5CFF',
+    cor: '#7A63FE',
     corLight: '#F3F0FF',
     icon: 'Route',
     objetivo: 'Organizar e equilibrar suas finanças',

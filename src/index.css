@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,19 +45,19 @@ body {
 
 @layer components {
   .card {
-    @apply bg-white rounded-2xl shadow-card p-4;
+    @apply rounded-2xl border border-ink-200 bg-white p-4 shadow-card;
   }
   .card-interactive {
-    @apply bg-white rounded-2xl shadow-card p-4 transition-shadow duration-200 hover:shadow-card-hover;
+    @apply rounded-2xl border border-ink-200 bg-white p-4 shadow-card transition-shadow duration-200 hover:shadow-card-hover;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 px-5 py-3;
+    @apply btn bg-gradient-to-r from-violet-700 to-primary-700 text-white px-5 py-3 shadow-[0_6px_18px_-9px_rgba(79,109,255,0.75)] hover:from-violet-700 hover:to-primary-800;
   }
   .btn-secondary {
-    @apply btn bg-ink-100 text-ink-800 hover:bg-ink-200 px-5 py-3;
+    @apply btn border border-primary-200 bg-white text-primary-800 hover:border-primary-400 hover:bg-primary-50 px-5 py-3;
   }
   .btn-ghost {
     @apply btn text-ink-600 hover:bg-ink-100 px-4 py-2;
@@ -260,20 +262,20 @@ body {
   .home-main:has(.home-interactive) .home-interactive > button { min-height: 72px; padding-top: 8px; padding-bottom: 8px; }
 }
 
-/* Nexo: superfícies neutras e cor reservada para orientação e progresso. */
+/* NYX: superfícies leves, títulos Sora e ações em índigo/roxo. */
 @layer base {
   body { letter-spacing: -0.015em; }
-  h1, h2, h3 { letter-spacing: -0.035em; }
+  h1, h2, h3 { font-family: Sora, Inter, system-ui, sans-serif; letter-spacing: -0.035em; }
   button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
   button:focus-visible, a:focus-visible, summary:focus-visible {
-    outline: 3px solid #35699D;
+    outline: 3px solid #4F6DFF;
     outline-offset: 4px;
   }
 }
 @layer components {
-  .surface { @apply rounded-3xl border border-ink-200/70 bg-white shadow-card; }
+  .surface { @apply rounded-3xl border border-ink-200 bg-white shadow-card; }
   .eyebrow { @apply text-[10px] font-bold uppercase tracking-[0.16em] text-ink-500; }
-  .page-title { @apply text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl; }
+  .page-title { @apply font-display text-2xl font-bold tracking-tight text-ink-900 sm:text-3xl; }
   .page-copy { @apply mt-2 text-sm leading-relaxed text-ink-500; }
   .text-link { @apply inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-primary-700 hover:text-primary-800; }
   .btn-primary { @apply min-h-12 shadow-sm; }
@@ -287,8 +289,15 @@ body {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
-/* Traços arredondados do sistema de ícones Nexo. */
-.lucide { stroke-width: 1.8; }
+/* Traços arredondados do sistema de ícones NYX. */
+.lucide { stroke-width: 2; }
+
+/* Uma superfície clara por bloco deixa o saldo e a trilha em destaque. */
+.home-main .calendar-compact,
+.home-main .home-categories {
+  box-shadow: 0 7px 20px -14px rgba(9, 20, 51, 0.28);
+  border-color: #E3E9F2;
+}
 
 /* Convite breve ao aprendizado, sem movimento contínuo. */
 @media (prefers-reduced-motion: no-preference) {
@@ -296,5 +305,5 @@ body {
 }
 @keyframes learn-invite {
   0%, 100% { transform: translateY(0) scale(1); }
-  45% { transform: translateY(-3px) scale(1.12); box-shadow: 0 0 0 5px rgba(36, 87, 137, 0.08); }
+  45% { transform: translateY(-3px) scale(1.12); box-shadow: 0 0 0 5px rgba(79, 109, 255, 0.1); }
 }
