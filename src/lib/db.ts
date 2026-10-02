@@ -32,7 +32,7 @@ function getDB() {
           db.createObjectStore('appstate');
         }
       },
-    });
+    }).catch((error: unknown) => { dbPromise = null; throw error; });
   }
   return dbPromise;
 }

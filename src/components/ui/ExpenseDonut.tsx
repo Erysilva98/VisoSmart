@@ -15,7 +15,7 @@ export function ExpenseDonut({ categories, hidden, compact = false, onSelect }: 
   });
   const visible = compact ? [...paths].sort((a, b) => b.valor - a.valor).slice(0, 3) : paths;
   return <div className={`grid grid-cols-[minmax(75px,0.8fr)_minmax(0,1.6fr)] items-center gap-3 ${compact ? 'donut-compact' : 'pb-2'}`}>
-    {hidden ? <p className="text-center text-xs text-ink-500">Valores ocultos</p> : <svg viewBox="0 0 200 200" className="mx-auto w-full max-w-48" aria-label="Gastos por categoria: selecione uma fatia">
+    {hidden ? <p className="text-center text-xs text-ink-500">Valores ocultos</p> : <svg viewBox="0 0 200 200" className="mx-auto aspect-square w-full max-w-48" aria-label="Gastos por categoria: selecione uma fatia">
       {paths.map((item) => <path key={item.categoria} d={item.d} fill={CATEGORIES[item.categoria].cor} stroke="white" strokeWidth={2} role="button" tabIndex={0} aria-label={`${CATEGORIES[item.categoria].nome}: ${item.percent.toFixed(1).replace('.', ',')}%, ${formatCurrency(item.valor)}. Ver despesas`} onClick={() => onSelect(item.categoria)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(item.categoria); } }} className="cursor-pointer transition-opacity hover:opacity-80 focus:opacity-60 focus:outline-none"><title>{CATEGORIES[item.categoria].nome}</title></path>)}
     </svg>}
     <div>{visible.map((item) => <button key={item.categoria} type="button" onClick={() => onSelect(item.categoria)} className={`flex w-full items-center gap-2 rounded-lg text-left hover:bg-ink-50 ${compact ? 'min-h-8 py-0.5' : 'min-h-12 py-1'}`}>

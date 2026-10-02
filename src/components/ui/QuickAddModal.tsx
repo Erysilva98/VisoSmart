@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ArrowLeft, ChevronRight, Clock3, Zap } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useStore } from '@/store/useStore';
+import { showNotice } from '@/lib/uiNotice';
 import { CATEGORIES } from '@/data/categories';
 import type { CategoryId, Transaction, TransactionType } from '@/types';
 import { formatCurrency } from '@/lib/format';
@@ -34,11 +35,13 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
   const [showDescription, setShowDescription] = useState(false);
+  const [showDateHelp, setShowDateHelp] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const savingRef = useRef(false);
   const titleId = useId();
   const amountId = useId();
   const descriptionId = useId();
+  const dateHelpId = useId();
   const amount = parseAmount(valor);
   const today = new Date();
   const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -105,7 +108,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
     event.preventDefault();
     if (!validDate || savingRef.current || !categoria || !cats.includes(categoria) || !validAmount) return;
     savingRef.current = true;
-    addTransaction({
+    const transactionId = addTransaction({
       tipo,
       valor: Math.round(amount * 100) / 100,
       categoria,
@@ -113,6 +116,11 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
       descricao: descricao.trim() || undefined,
     });
     onClose();
+    showNotice({
+      message: `${tipo === 'receita' ? 'Entrada' : 'Despesa'} de ${formatCurrency(amount)} em ${CATEGORIES[categoria].nome} registrada.`,
+      actionLabel: 'Desfazer',
+      onAction: () => useStore.getState().deleteTransaction(transactionId),
+    });
   }
 
   return (
@@ -148,19 +156,23 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
               </button>
             )}
             <div>
-              <h2 id={titleId} className="font-bold text-ink-900">Nova transação</h2>
-              <p className="mt-0.5 text-xs text-ink-500">{step === 'categoria' ? '1. Categoria · 2. Valor · Pronto!' : 'Um valor, um toque e pronto.'}</p>
+              <h2 id={titleId} className="font-bold text-ink-900">Novo registro</h2>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-500 hover:bg-ink-50" aria-label="Fechar nova transação">
+          <button type="button" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-500 hover:bg-ink-50" aria-label="Fechar novo registro">
             <X className="h-5 w-5" />
           </button>
         </header>
 
         <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
           <div data-scroll-content className="min-h-0 overflow-y-auto p-4 space-y-4">
-            {initialDate && <p className="rounded-xl bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700">Data do registro: {initialDate.split('-').reverse().join('/')}</p>}
-            {!validDate && <p role="alert" className="text-xs text-expense">Registre apenas dinheiro recebido ou gastos já realizados. Escolha hoje ou uma data anterior no calendário.</p>}
+            <div className="rounded-xl bg-primary-50 px-3 py-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-primary-700">Data do registro: {(initialDate ?? localToday).split('-').reverse().join('/')}</p>
+                <button type="button" onClick={() => setShowDateHelp((value) => !value)} aria-label="Informações sobre a data do registro" aria-expanded={showDateHelp} aria-controls={dateHelpId} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold hover:bg-white/70 ${validDate ? 'text-primary-700' : 'text-expense'}`}>?</button>
+              </div>
+              <p id={dateHelpId} hidden={!showDateHelp} role={validDate ? undefined : 'alert'} className={`mt-1 pb-1 text-xs leading-relaxed ${validDate ? 'text-ink-600' : 'text-expense'}`}>Registre apenas dinheiro recebido ou gastos já realizados. Escolha hoje ou uma data anterior no calendário.</p>
+            </div>
             <div className="flex rounded-xl bg-ink-100 p-1" aria-label="Tipo de transação">
               {(['despesa', 'receita'] as const).map((type) => (
                 <button key={type} type="button" aria-pressed={tipo === type} onClick={() => changeType(type)}

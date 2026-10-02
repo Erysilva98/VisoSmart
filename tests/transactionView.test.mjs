@@ -22,9 +22,9 @@ const records = [
 ];
 const month = new Date(2026, 8, 1);
 
-test('monthly summary excludes other months and years, and sorts recent entries', () => {
+test('monthly summary carries the previous balance and sorts current entries', () => {
   const view = getTransactionView(records, { month });
-  assert.deepEqual([view.income, view.expenses, view.balance], [1000, 35.80, 964.20]);
+  assert.deepEqual([view.carriedBalance, view.income, view.expenses, view.balance], [-599, 401, 35.80, 365.20]);
   assert.deepEqual(view.items.map((item) => item.id), ['bus', 'food-b', 'food-a', 'income']);
   assert.deepEqual(view.categories, [{ categoria: 'alimentacao', valor: 30.30 }, { categoria: 'transporte', valor: 5.50 }]);
   assert.equal(records[0].id, 'income', 'source array remains unchanged');
@@ -39,8 +39,8 @@ test('search matches descriptions and category names without case or accent sens
   assert.equal(getTransactionView(records, { month, search: 'almoco' }).expenses, 20.20);
   assert.equal(getTransactionView(records, { month, search: 'onibus' }).expenses, 5.50);
 });
-test('combined filters intersect; no results and empty months have zero totals', () => {
-  for (const filters of [{ month, type: 'receita', category: 'alimentacao' }, { month, type: 'despesa', search: 'Salário' }, { month: new Date(2027, 0, 1) }]) {
+test('combined filters intersect; no results have zero totals', () => {
+  for (const filters of [{ month, type: 'receita', category: 'alimentacao' }, { month, type: 'despesa', search: 'Salário' }]) {
     const view = getTransactionView(records, filters);
     assert.equal(view.items.length, 0);
     assert.deepEqual([view.income, view.expenses, view.balance], [0, 0, 0]);
@@ -58,5 +58,25 @@ test('month keys are validated and December/January boundaries use the proper ye
   assert.equal(parseMonthKey('2026-13', month).getMonth(), 8);
   assert.equal(parseMonthKey('invalid', month).getFullYear(), 2026);
   assert.equal(getTransactionView(records, { month: parseMonthKey('2026-08') }).expenses, 99);
-  assert.equal(getTransactionView(records, { month: parseMonthKey('2026-10') }).income, 400);
+  assert.equal(getTransactionView(records, { month: parseMonthKey('2026-10') }).income, 765.20);
+});
+
+test('onboarding balance opens the first month and the available balance opens later months', () => {
+  const history = [
+    { ...tx('opening', '2026-09-05T12:00:00', 'receita', 'saldo_inicial', 100), origem: 'saldo_inicial' },
+    tx('food', '2026-09-20T12:00:00', 'despesa', 'alimentacao', 10),
+    { ...tx('reserve', '2026-09-21T12:00:00', 'transferencia', 'metas', 20), origem: 'meta_aporte' },
+    tx('october-food', '2026-10-01T12:00:00', 'despesa', 'alimentacao', 5),
+  ];
+  const september = getTransactionView(history, { month: parseMonthKey('2026-09') });
+  assert.deepEqual([september.initialBalance, september.income, september.balance], [100, 100, 70]);
+  const october = getTransactionView(history, { month: parseMonthKey('2026-10') });
+  assert.deepEqual([october.carriedBalance, october.income, october.expenses, october.balance], [70, 70, 5, 65]);
+  assert.deepEqual(october.items.map((item) => item.id), ['october-food']);
+  const november = getTransactionView(history, { month: parseMonthKey('2026-11') });
+  assert.deepEqual([november.carriedBalance, november.income, november.balance], [65, 65, 65]);
+  const filtered = getTransactionView(history, { month: parseMonthKey('2026-10'), type: 'despesa' });
+  assert.deepEqual([filtered.income, filtered.expenses], [0, 5]);
+  const withdrawn = getTransactionView([...history, { ...tx('withdraw', '2026-10-03T12:00:00', 'transferencia', 'saque', 10), origem: 'meta_saque' }], { month: parseMonthKey('2026-10') });
+  assert.deepEqual([withdrawn.income, withdrawn.expenses, withdrawn.balance], [70, 5, 75]);
 });

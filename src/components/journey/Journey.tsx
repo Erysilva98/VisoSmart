@@ -6,10 +6,10 @@ import { useStore } from '@/store/useStore';
 import { getAchievements, getPracticeDays, getSkills, localDay } from '@/lib/journey';
 
 export function Brand({ compact = false }: { compact?: boolean }) {
-  return <span className="inline-flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink-900 shadow-sm"><NexoMark className="h-8 w-8" /></span>{!compact && <span className="text-[25px] font-bold tracking-[-0.05em] text-ink-900">Nexo</span>}</span>;
+  return <span className="inline-flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink-900 shadow-sm"><NexoMark className="h-8 w-8" /></span>{!compact && <span className="font-display text-[25px] font-bold tracking-[-0.05em] text-ink-900">NYX</span>}</span>;
 }
 
-export function ProgressBar({ value, label, color = '#7C5CFF' }: { value: number; label: string; color?: string }) {
+export function ProgressBar({ value, label, color = '#7A63FE' }: { value: number; label: string; color?: string }) {
   const percent = Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
   return <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percent)} className="h-1.5 overflow-hidden rounded-full bg-ink-100"><motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: 0.5 }} className="h-full rounded-full" style={{ backgroundColor: color }} /></div>;
 }
@@ -17,7 +17,7 @@ export function ProgressBar({ value, label, color = '#7C5CFF' }: { value: number
 export function GrowthMark({ small = false }: { small?: boolean }) {
   return <div aria-hidden="true" className={`journey-grid relative flex items-center justify-center overflow-hidden rounded-full ${small ? 'h-28 w-28' : 'h-56 w-56 sm:h-72 sm:w-72'}`}>
     <div className="absolute inset-3 rounded-full border border-primary-200/70" /><div className="absolute inset-9 rounded-full border border-primary-200/70" />
-    <motion.div initial={{ rotate: -10, scale: 0.9 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', damping: 15 }} className={`relative flex rotate-[-8deg] items-center justify-center rounded-[30%] bg-ink-900 shadow-[0_12px_0_0_#0b1025,0_22px_30px_-10px_#7c5cff45] ${small ? 'h-14 w-14' : 'h-28 w-28'}`}><NexoMark className={small ? 'h-12 w-12' : 'h-24 w-24'} /></motion.div>
+    <motion.div initial={{ rotate: -10, scale: 0.9 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', damping: 15 }} className={`relative flex rotate-[-8deg] items-center justify-center rounded-[30%] bg-ink-900 shadow-[0_12px_0_0_#0b1025,0_22px_30px_-10px_#7A63FE45] ${small ? 'h-14 w-14' : 'h-28 w-28'}`}><NexoMark className={small ? 'h-12 w-12' : 'h-24 w-24'} /></motion.div>
     {!small && <><span className="absolute right-7 top-7 flex h-11 w-11 items-center justify-center rounded-2xl border border-white bg-amber-100 shadow-sm"><Sparkles className="h-5 w-5 text-amber-600" /></span><span className="absolute bottom-8 left-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-soft"><ArrowUpRight className="h-6 w-6 text-primary-600" /></span></>}
   </div>;
 }

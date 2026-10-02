@@ -7,6 +7,7 @@ import type {
   Budget, LessonProgress, CategoryId, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
 } from '@/types';
 import { clearState, loadState, requestPersistentStorage, saveState } from '@/lib/db';
+import { setStorageStatus } from '@/lib/storageStatus';
 import { getProfileFromExperience, getProfileFromScore } from '@/data/profiles';
 import { getCurrentMonthKey } from '@/data/challenges';
 import { canCompleteChallenge, canCompleteLesson } from '@/lib/progress';
@@ -48,7 +49,8 @@ interface StoreActions {
   deleteTransaction: (id: string) => void;
   addGoal: (g: Omit<Goal, 'id' | 'criadaEm' | 'valorAtual'>) => void;
   updateGoal: (id: string, valorAtual: number) => void;
-  deleteGoal: (id: string) => void;
+  deleteGoal: (id: string) => string | null;
+  restoreGoal: (goal: Goal, investment: Investment | undefined, withdrawalId: string | null) => void;
   reorderGoals: (goals: Goal[]) => void;
   addInvestment: (investment: Omit<Investment, 'id' | 'criadoEm'>) => void;
   updateInvestment: (id: string, investment: Partial<Investment>) => void;
@@ -80,6 +82,9 @@ type Store = AppState & StoreActions;
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingSave: AppState | null = null;
+let saving = false;
+let activeSave: Promise<void> | null = null;
+let resetting = false;
 let saveListenersRegistered = false;
 
 function flushPendingSave() {
@@ -87,15 +92,30 @@ function flushPendingSave() {
     clearTimeout(saveTimer);
     saveTimer = null;
   }
-  if (!pendingSave) return;
+  if (!pendingSave || saving) return;
 
   const state = pendingSave;
   pendingSave = null;
-  void saveState(state).catch((error: unknown) => {
-    // Keep the newest state queued so a later foreground/visibility event can retry.
-    pendingSave = state;
+  saving = true;
+  activeSave = saveState(state).then(() => {
+    saving = false;
+    if (resetting) return;
+    if (pendingSave) flushPendingSave();
+    else setStorageStatus('idle');
+  }).catch((error: unknown) => {
+    saving = false;
+    if (resetting) return;
+    pendingSave ??= state;
+    setStorageStatus('error');
     console.error('Não foi possível salvar os dados offline.', error);
   });
+}
+
+export function retryPendingSave() {
+  if (pendingSave) {
+    setStorageStatus('saving');
+    flushPendingSave();
+  }
 }
 
 function registerSaveListeners() {
@@ -110,6 +130,7 @@ function registerSaveListeners() {
 
 function scheduleSave(state: AppState) {
   pendingSave = state;
+  setStorageStatus('saving');
   registerSaveListeners();
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -254,13 +275,27 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   deleteGoal: (id) => {
+    let withdrawalId: string | null = null;
     set((s) => {
       const goal = s.goals.find((item) => item.id === id);
       const withdrawal: Transaction | null = goal && goal.valorAtual > 0 ? {
         id: uid(), tipo: 'transferencia', categoria: 'saque', origem: 'meta_saque', metaId: id,
         valor: goal.valorAtual, data: localDateTime(), descricao: goal.titulo,
       } : null;
+      withdrawalId = withdrawal?.id ?? null;
       return { goals: s.goals.filter((g) => g.id !== id), investments: s.investments.filter((item) => item.metaId !== id), transactions: withdrawal ? [withdrawal, ...s.transactions] : s.transactions };
+    });
+    get()._persist();
+    return withdrawalId;
+  },
+  restoreGoal: (goal, investment, withdrawalId) => {
+    set((s) => {
+      if (s.goals.some((item) => item.id === goal.id)) return s;
+      return {
+        goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)),
+        investments: investment ? [...s.investments, investment] : s.investments,
+        transactions: withdrawalId ? s.transactions.filter((item) => item.id !== withdrawalId) : s.transactions,
+      };
     });
     get()._persist();
   },
@@ -441,14 +476,17 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   resetApp: async () => {
+    resetting = true;
     if (saveTimer) {
       clearTimeout(saveTimer);
       saveTimer = null;
     }
     pendingSave = null;
+    await activeSave;
     syncCategories();
     set({ ...initialState(), categoryDefinitions: [], preferences: undefined, openingBalance: undefined, incomePattern: undefined, learningActions: undefined, lessonReviews: undefined });
-    await clearState();
+    try { await clearState(); setStorageStatus('idle'); }
+    finally { resetting = false; }
   },
 
   _persist: () => {

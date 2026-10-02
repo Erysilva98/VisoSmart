@@ -23,9 +23,20 @@ export interface TransactionFilters {
 /** A lista e os totais usam exatamente o mesmo conjunto de registros. */
 export function getTransactionView(transactions: Transaction[], filters: TransactionFilters) {
   const query = normalizeSearch(filters.search ?? '');
+  const hasFilters = Boolean((filters.type && filters.type !== 'all') || filters.category || query);
+  const monthStart = new Date(filters.month.getFullYear(), filters.month.getMonth(), 1);
+  const localDate = (value: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+  // O dinheiro disponível no fim de um mês abre o seguinte, inclusive reservas e saques de metas.
+  const carriedCents = hasFilters ? 0 : transactions.reduce((sum, item) => {
+    if (localDate(item.data) >= monthStart) return sum;
+    const cents = Math.round(item.valor * 100);
+    if (item.origem === 'meta_aporte') return sum - cents;
+    if (item.origem === 'meta_saque') return sum + cents;
+    return sum + (item.tipo === 'receita' ? cents : item.tipo === 'despesa' ? -cents : 0);
+  }, 0);
   const items = transactions.filter((item) => {
     // Datas sem horário representam o dia local, não meia-noite UTC.
-    const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(item.data) ? `${item.data}T12:00:00` : item.data);
+    const date = localDate(item.data);
     if (date.getFullYear() !== filters.month.getFullYear() || date.getMonth() !== filters.month.getMonth()) return false;
     if (filters.type && filters.type !== 'all' && item.tipo !== filters.type) return false;
     if (filters.category && item.categoria !== filters.category) return false;
@@ -40,7 +51,11 @@ export function getTransactionView(transactions: Transaction[], filters: Transac
     const cents = Math.round(item.valor * 100);
     if (item.origem === 'meta_aporte') { reservedCents += cents; return; }
     if (item.origem === 'meta_saque') { reservedCents -= cents; return; }
-    if (item.origem === 'saldo_inicial') openingCents += cents;
+    if (item.origem === 'saldo_inicial') {
+      if (hasFilters) incomeCents += cents;
+      else openingCents += cents;
+      return;
+    }
     if (item.tipo === 'receita') incomeCents += cents;
     else if (item.tipo === 'despesa') {
       expenseCents += cents;
@@ -48,5 +63,6 @@ export function getTransactionView(transactions: Transaction[], filters: Transac
     }
   });
   const categories = Array.from(categoryCents, ([categoria, cents]) => ({ categoria, valor: cents / 100 })).sort((a, b) => b.valor - a.valor);
-  return { initialBalance: openingCents / 100, items, income: incomeCents / 100, expenses: expenseCents / 100, balance: (incomeCents - expenseCents - reservedCents) / 100, categories };
+  const availableCents = carriedCents + openingCents + incomeCents - expenseCents - reservedCents;
+  return { initialBalance: openingCents / 100, carriedBalance: carriedCents / 100, items, income: (carriedCents + openingCents + incomeCents) / 100, expenses: expenseCents / 100, balance: availableCents / 100, categories };
 }

@@ -85,7 +85,7 @@ export function Investments() {
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${appearance.bg}`}><ItemIcon className={`w-4 h-4 ${appearance.color}`} /></div>
               <div className="flex-1 min-w-0"><p className="text-sm font-medium text-ink-900 truncate">{investment.nome}</p><p className="text-xs text-ink-500">{investment.tipo === 'reserva' ? 'Reserva protegida' : investment.tipo === 'disponivel' ? 'Saldo disponível' : 'Investimento'} · {investment.considerarDisponivel ? 'Disponível' : 'Protegido'}</p></div>
               <span className="text-sm font-bold text-ink-900">{formatCurrency(investment.valor)}</span>
-              <button onClick={() => deleteInvestment(investment.id)} aria-label={`Excluir ${investment.nome}`} className="p-1.5 text-ink-300 hover:text-danger"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => deleteInvestment(investment.id)} aria-label={`Excluir ${investment.nome}`} className="flex h-11 w-11 items-center justify-center rounded-lg text-expense hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
             </motion.div></div>
             );
           })}
