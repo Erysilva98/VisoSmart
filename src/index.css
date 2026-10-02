@@ -196,7 +196,7 @@ body {
   .donut-compact svg { max-width: 96px; }
   .donut-compact button span:last-child span:last-child { display: none; }
   .home-categories { padding-bottom: 4px; }
-  .home-main:has(.home-interactive) { height: calc(100dvh - 137px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); align-content: start; gap: 6px; overflow: hidden; padding-top: 7px; padding-bottom: 0; }
+  .home-main:has(.home-interactive) { min-height: calc(100dvh - 137px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); align-content: start; gap: 8px; overflow: visible; padding-top: 8px; padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
   .home-main:has(.home-interactive) .calendar-compact .calendar-day { height: 28px; }
   .home-main:has(.home-interactive) .calendar-compact .calendar-day > div:first-of-type > span:first-child { width: 14px; height: 14px; }
   .home-main:has(.home-interactive) .calendar-compact .calendar-day > div:first-of-type svg { width: 9px; height: 9px; }
@@ -230,10 +230,10 @@ body {
 @media (max-width: 767px) and (max-height: 950px) {
   .home-main:has(.home-interactive) { gap: 4px; padding-top: 4px; }
   .home-main:has(.home-interactive) .home-interactive { gap: 5px; }
-  .home-main:has(.home-interactive) .home-interactive > section { padding-top: 8px; padding-bottom: 8px; }
+  .home-main:has(.home-interactive) .home-interactive > section { padding-top: 12px; padding-bottom: 10px; }
   .home-main:has(.home-interactive) .home-interactive > nav button { min-height: 48px; gap: 2px; }
   .home-main:has(.home-interactive) .home-interactive > nav button > span:first-child { width: 28px; height: 28px; }
-  .home-main:has(.home-interactive) .home-interactive > button { min-height: 56px; padding-top: 2px; padding-bottom: 2px; }
+  .home-main:has(.home-interactive) .home-interactive > button { min-height: 80px; padding-top: 10px; padding-bottom: 10px; }
   .home-main:has(.home-interactive) .home-categories .donut-compact button:nth-of-type(n+3) { display: none; }
 }
 
@@ -247,21 +247,17 @@ body {
 }
 
 @media (max-width: 767px) and (max-height: 700px) {
-  .home-main:has(.home-interactive) .home-interactive > nav { display: none; }
-  .home-main:has(.home-interactive) .home-interactive > button { min-height: 54px; }
+  .home-main:has(.home-interactive) .home-interactive > button { min-height: 76px; }
 }
 
 @media (max-width: 767px) and (max-height: 600px) {
   .home-main:has(.home-interactive) .home-interactive > section { padding-top: 5px; padding-bottom: 5px; }
-  .home-main:has(.home-interactive) .home-interactive > section > .grid { grid-template-columns: minmax(0, 1fr) 68px; }
-  .home-main:has(.home-interactive) .home-interactive > section > .grid > div:first-child button { height: 34px; }
   .home-main:has(.home-interactive) .calendar-compact { padding-top: 4px; padding-bottom: 4px; }
 }
 
 @media (max-width: 767px) and (max-height: 540px) {
   .home-main:has(.home-interactive) { gap: 2px; }
-  .home-main:has(.home-interactive) .home-interactive > button { min-height: 48px; padding-top: 2px; padding-bottom: 2px; }
-  .home-main:has(.home-interactive) .home-interactive > button > span:last-child > span:last-child { display: none; }
+  .home-main:has(.home-interactive) .home-interactive > button { min-height: 72px; padding-top: 8px; padding-bottom: 8px; }
 }
 
 /* Nexo: superfícies neutras e cor reservada para orientação e progresso. */
