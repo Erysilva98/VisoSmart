@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Pencil, Plus } from 'lucide-react';
 import { CATEGORIES, DESPESA_CATEGORIES, RECEITA_CATEGORIES } from '@/data/categories';
 import { useStore } from '@/store/useStore';
@@ -16,6 +16,8 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<TransactionType>('despesa');
   const [editing, setEditing] = useState<CategoryDefinition | null>(null);
   const [error, setError] = useState('');
+  const recordPractice = state.recordPractice;
+  useEffect(() => { recordPractice(type === 'receita' ? 'manageIncome' : 'manageExpense'); }, [type, recordPractice]);
   const key = type === 'despesa' ? 'expenseCategories' : 'incomeCategories';
   const options = Array.from(new Set([...(type === 'despesa' ? DESPESA_CATEGORIES : RECEITA_CATEGORIES), ...definitions.filter((item) => item.tipo === type).map((item) => item.id)]));
   const config = (id: CategoryId) => definitions.find((item) => item.id === id) ?? CATEGORIES[id];

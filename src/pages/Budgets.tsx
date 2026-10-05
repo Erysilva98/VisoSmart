@@ -26,7 +26,7 @@ export function Budgets() {
   const visible = showAll ? options : options.slice(0, 4);
   const amount = parseAmount(value);
   const valid = Number.isFinite(amount) && amount > 0;
-  function openLimit(id: CategoryId) { setCategory(id); setValue(budgets.find((item) => item.categoria === id)?.limite.toString() ?? ''); setShowForm(true); }
+  function openLimit(id: CategoryId) { if (budgets.some((item) => item.categoria === id)) useStore.getState().recordPractice('inspectLimit', id); setCategory(id); setValue(budgets.find((item) => item.categoria === id)?.limite.toString() ?? ''); setShowForm(true); }
 
   return <Layout title="Meus limites" compact>
     <header className="mb-3 flex items-center justify-between gap-2"><div><h1 className="text-lg font-semibold">Meus limites</h1><p className="text-xs text-ink-500">Escolha uma categoria para acompanhar.</p></div><button type="button" aria-label="Entender os limites" onClick={() => setHelp(true)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><CircleHelp className="h-5 w-5" /></button></header>

@@ -1,8 +1,9 @@
 import { missionProgress } from './journeyMissions';
 import type { AppState, Challenge } from '@/types';
 import { getLessonById } from '@/data/lessons';
+import { lessonPracticeProgress } from './practice';
 
-type ProgressState = Pick<AppState, 'transactions' | 'goals' | 'budgets' | 'lessonProgress' | 'learningActions' | 'lessonReviews'>;
+type ProgressState = Pick<AppState, 'transactions' | 'goals' | 'budgets' | 'lessonProgress' | 'learningActions' | 'lessonReviews' | 'practiceEvents' | 'lessonStarts'>;
 
 /** Centraliza regras verificáveis; o store é a única camada que concede XP. */
 export function canCompleteChallenge(challenge: Challenge, state: ProgressState): boolean {
@@ -61,6 +62,10 @@ export function getChallengeProgress(challenge: Challenge, state: ProgressState)
 export function canCompleteLesson(lessonId: string, state: Omit<ProgressState, 'lessonProgress'>): boolean {
   const expenses = state.transactions.filter((item) => item.tipo === 'despesa');
   const lesson = getLessonById(lessonId);
+  if (lesson?.requirements) {
+    const progress = lessonPracticeProgress(lesson, state);
+    return progress.length > 0 && progress.every((item) => item.current >= item.target);
+  }
   const hasSavingsPlan = state.budgets.some((item) => item.categoria === 'investimentos_economia');
   if (lesson?.desafioPratico) {
     const validations: Record<string, boolean> = {

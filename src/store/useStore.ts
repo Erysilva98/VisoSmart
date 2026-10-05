@@ -3,7 +3,7 @@ import { localDateTime, withInitialBalance } from '@/lib/personalization';
 import { monthlyMissions } from '@/lib/journeyMissions';
 import { create } from 'zustand';
 import type {
-  AppState, CategoryDefinition, Transaction, Goal, Investment, JourneyPreferences, LearningAction,
+  AppState, CategoryDefinition, Transaction, Goal, Investment, JourneyPreferences, LearningAction, PracticeAction,
   Budget, LessonProgress, CategoryId, OnboardingState, PlannedExpense, CreditCard, CreditCardExpense,
 } from '@/types';
 import { clearState, loadState, requestPersistentStorage, saveState } from '@/lib/db';
@@ -37,6 +37,10 @@ function initialState(): AppState {
 }
 
 interface StoreActions {
+  startMission: (id: string) => void;
+  recordPractice: (action: PracticeAction, entity?: string, month?: string) => void;
+  startLesson: (lessonId: string) => void;
+  answerLesson: (lessonId: string, answer: number) => void;
   saveCategoryPreferences: (definitions: CategoryDefinition[], preferences: JourneyPreferences) => void;
   init: () => Promise<void>;
   completeOnboarding: (score: number, preferences?: JourneyPreferences) => void;
@@ -150,9 +154,45 @@ function updateProfileFromExperience(onboarding: OnboardingState, xp: number): O
 
 export const useStore = create<Store>((set, get) => ({
   ...initialState(),
+  startMission: (id) => {
+    const s = get();
+    const mission = s.challenges.find((item) => item.id === id);
+    if (!mission || mission.started || mission.concluido || mission.mes !== getCurrentMonthKey() || mission.perfil !== s.onboarding.profile) return;
+    const contextual = monthlyMissions(mission.perfil, mission.mes, s.preferences?.focus, s).find((item) => item.id === id);
+    if (!contextual) return;
+    set({ challenges: s.challenges.map((item) => item.id === id ? { ...contextual, started: true } : item) });
+    get()._persist();
+  },
+  recordPractice: (action, entity, month = getCurrentMonthKey()) => {
+    const s = get();
+    const now = new Date();
+    const at = `${localDateTime(now).slice(0, 10)}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+    const last = s.practiceEvents?.[s.practiceEvents.length - 1];
+    if (last?.action === action && last.entity === entity && last.month === month && Date.now() - Date.parse(last.at) < 800) return;
+    const sequence = (s.practiceSequence ?? 0) + 1;
+    set({ practiceSequence: sequence, practiceEvents: [...(s.practiceEvents ?? []), { sequence, action, entity, month, at }] });
+    get()._persist();
+  },
+  startLesson: (lessonId) => {
+    const s = get();
+    const next = getLessonsForProfile(s.onboarding.profile ?? 'explorer').find((lesson) => !s.lessonProgress.some((item) => item.lessonId === lesson.id && item.concluido));
+    if (next?.id !== lessonId || s.lessonStarts?.[lessonId] !== undefined) return;
+    set({ lessonStarts: { ...s.lessonStarts, [lessonId]: s.practiceSequence ?? 0 } });
+    get()._persist();
+  },
+  answerLesson: (lessonId, answer) => {
+    const s = get();
+    const lesson = getLessonById(lessonId);
+    if (!lesson?.question || !Number.isInteger(answer) || !lesson.question.options[answer] || s.lessonStarts?.[lessonId] === undefined) return;
+    set({ lessonAnswers: { ...s.lessonAnswers, [lessonId]: answer } });
+    get()._persist();
+  },
   saveCategoryPreferences: (categoryDefinitions, preferences) => {
+    const changed = JSON.stringify(categoryDefinitions) !== JSON.stringify(get().categoryDefinitions ?? []);
     syncCategories(categoryDefinitions);
     set({ categoryDefinitions, preferences });
+    get().recordPractice('saveCategories');
+    if (changed) get().recordPractice('editCategory');
     get()._persist();
   },
 
@@ -206,6 +246,7 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
   recordLearningAction: (action) => {
+    get().recordPractice(action);
     const date = localDateTime();
     if (get().learningActions?.[action] === date) return;
     set((s) => ({ learningActions: { ...s.learningActions, [action]: date } }));
@@ -215,11 +256,17 @@ export const useStore = create<Store>((set, get) => ({
   addTransaction: (t) => {
     const transaction: Transaction = { ...t, id: uid() };
     set((s) => ({ transactions: [transaction, ...s.transactions] }));
+    if (t.origem !== 'saldo_inicial' && t.tipo !== 'transferencia') {
+      get().recordPractice('record', transaction.id, t.data.slice(0, 7));
+      get().recordPractice(t.tipo === 'receita' ? 'income' : 'expense', t.categoria, t.data.slice(0, 7));
+    }
     get()._persist();
     return transaction.id;
   },
   restoreTransaction: (transaction) => {
+    const missing = !get().transactions.some((item) => item.id === transaction.id);
     set((s) => s.transactions.some((item) => item.id === transaction.id) ? s : { transactions: [transaction, ...s.transactions] });
+    if (missing) get().recordPractice('undo', transaction.id);
     get()._persist();
   },
   setMoneyContext: (openingBalance, incomePattern) => {
@@ -230,7 +277,9 @@ export const useStore = create<Store>((set, get) => ({
 
   // Edição preserva o identificador para manter filtros, desafios e histórico consistentes.
   updateTransaction: (id, transaction) => {
+    const existing = get().transactions.find((item) => item.id === id);
     set((s) => ({ transactions: s.transactions.map((item) => item.id === id ? { ...transaction, id } : item) }));
+    if (existing && JSON.stringify(existing) !== JSON.stringify({ ...transaction, id })) get().recordPractice('edit', id, transaction.data.slice(0, 7));
     get()._ensureMonthlyChallenges();
     get()._persist();
   },
@@ -249,11 +298,13 @@ export const useStore = create<Store>((set, get) => ({
       return { goals: [...s.goals, goal].sort((first, second) => (first.meses ?? Number.MAX_SAFE_INTEGER) - (second.meses ?? Number.MAX_SAFE_INTEGER)), investments: [...s.investments, investment] };
     });
     get().recordLearningAction('goal');
+    get().recordPractice('createGoal', goalId);
     get()._ensureMonthlyChallenges();
     get()._persist();
   },
 
   updateGoal: (id, valorAtual) => {
+    const previousValue = get().goals.find((item) => item.id === id)?.valorAtual;
     set((s) => {
       const goal = s.goals.find((item) => item.id === id);
       if (!goal || !Number.isFinite(valorAtual) || valorAtual < 0 || valorAtual > goal.valorAlvo) return s;
@@ -271,6 +322,7 @@ export const useStore = create<Store>((set, get) => ({
       };
     });
     if (get().goals.find((item) => item.id === id)?.valorAtual === valorAtual) get().recordLearningAction('goal');
+    if (previousValue !== undefined && valorAtual > previousValue && get().goals.find((item) => item.id === id)?.valorAtual === valorAtual) get().recordPractice('contribution', id);
     get()._persist();
   },
 
@@ -342,13 +394,14 @@ export const useStore = create<Store>((set, get) => ({
   completeChallenge: (id) => {
     set((s) => {
       const challenge = s.challenges.find((c) => c.id === id);
-      if (!challenge || challenge.concluido || !canCompleteChallenge(challenge, s)) return s;
+      if (!challenge || challenge.mes !== getCurrentMonthKey() || challenge.perfil !== s.onboarding.profile || challenge.concluido || !canCompleteChallenge(challenge, s)) return s;
       const xp = s.xp + challenge.xp;
       return {
         challenges: s.challenges.map((c) =>
           c.id === id ? { ...c, concluido: true } : c
         ),
         xp,
+        challengeHistory: [...s.challengeHistory, { templateId: challenge.id, perfil: challenge.perfil, mes: challenge.mes }],
         onboarding: updateProfileFromExperience(s.onboarding, xp),
       };
     });
@@ -367,6 +420,8 @@ export const useStore = create<Store>((set, get) => ({
   completeLesson: (lessonId, answer) => {
     set((s) => {
       const lesson = getLessonById(lessonId);
+      // Only the active curriculum can award new completion XP. Legacy history stays readable.
+      if (!lesson?.requirements) return s;
       if (lessonId.startsWith('trail-')) {
         const next = getLessonsForProfile(s.onboarding.profile ?? 'explorer', s.preferences?.focus).find((item) => !s.lessonProgress.some((entry) => entry.lessonId === item.id && entry.concluido));
         if (next?.id !== lessonId) return s;
@@ -440,6 +495,8 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   setBudget: (categoria, limite) => {
+    if (!Number.isFinite(limite) || limite <= 0) return;
+    const previous = get().budgets.find((item) => item.categoria === categoria);
     set((s) => {
       const existing = s.budgets.find((b) => b.categoria === categoria);
       const budget: Budget = { categoria, limite };
@@ -450,6 +507,8 @@ export const useStore = create<Store>((set, get) => ({
       };
     });
     get().recordLearningAction('budget');
+    get().recordPractice('saveLimit', categoria);
+    if (previous && previous.limite !== limite) get().recordPractice('updateLimit', categoria);
     get()._persist();
   },
 
@@ -484,7 +543,7 @@ export const useStore = create<Store>((set, get) => ({
     pendingSave = null;
     await activeSave;
     syncCategories();
-    set({ ...initialState(), categoryDefinitions: [], preferences: undefined, openingBalance: undefined, incomePattern: undefined, learningActions: undefined, lessonReviews: undefined });
+    set({ ...initialState(), categoryDefinitions: [], preferences: undefined, openingBalance: undefined, incomePattern: undefined, learningActions: undefined, lessonReviews: undefined, practiceEvents: [], practiceSequence: 0, lessonStarts: {}, lessonAnswers: {} });
     try { await clearState(); setStorageStatus('idle'); }
     finally { resetting = false; }
   },
@@ -499,10 +558,10 @@ export const useStore = create<Store>((set, get) => ({
     const s = get();
     if (!s.onboarding.profile) return;
     const monthKey = getCurrentMonthKey();
-    const current = s.challenges.filter((item) => item.id.startsWith('journey-') && item.mes === monthKey);
+    const current = s.challenges.filter((item) => item.id.startsWith('journey-v2-') && item.mes === monthKey && item.perfil === s.onboarding.profile);
     if (current.length === 4) return;
-    const next = monthlyMissions(s.onboarding.profile, monthKey, s.preferences?.focus).map((item) => current.find((old) => old.id === item.id) ?? item);
-    set({ challenges: [...s.challenges.filter((item) => !(item.id.startsWith('journey-') && item.mes === monthKey)), ...next] });
+    const next = monthlyMissions(s.onboarding.profile, monthKey, s.preferences?.focus, s).map((item) => current.find((old) => old.id === item.id) ?? { ...item, concluido: s.challengeHistory.some((entry) => entry.templateId === item.id) });
+    set({ challenges: [...s.challenges.filter((item) => !current.some((old) => old.id === item.id)), ...next] });
     get()._persist();
   },
 }));

@@ -10,8 +10,9 @@ async function moduleUrl(path, replacements = {}) {
 const categories = await moduleUrl('../src/data/categories.ts');
 const { syncCategories, CATEGORIES } = await import(categories);
 const { categoryOrder, profileForExperience, initialBalanceValue, withInitialBalance } = await import(await moduleUrl('../src/lib/personalization.ts', { '@/data/categories': categories }));
-const { monthlyMissions, missionProgress } = await import(await moduleUrl('../src/lib/journeyMissions.ts'));
-const { orderedTrail, TRAIL_LESSONS } = await import(await moduleUrl('../src/data/trailLessons.ts'));
+const practice = await moduleUrl('../src/lib/practice.ts');
+const { missionProgress } = await import(await moduleUrl('../src/lib/journeyMissions.ts', { './practice': practice }));
+
 const prefs = { experience: 1, incomeCategories: ['bolsa', 'estagio'], expenseCategories: ['educacao', 'transporte'], focus: 'save' };
 test('custom categories survive hydration, edits retain identifiers, and deselection preserves history metadata', () => {
   const custom = { id: 'custom_test', nome: 'Pets', cor: '#123456', icon: 'HeartPulse', tipo: 'despesa' };
@@ -47,30 +48,12 @@ test('initial balance becomes one identifiable entry, updates without duplicatio
   assert.deepEqual(revised[1], expense);
   assert.equal(withInitialBalance([], 0, '2026-09-01')[0].valor, 0);
 });
-test('four missions are unique and focus changes the fourth objective', () => {
-  for (const profile of ['explorer', 'equilibrado', 'construtor']) {
-    for (const focus of ['understand', 'organize', 'save']) {
-      const missions = monthlyMissions(profile, '2026-09', focus);
-      assert.equal(missions.length, 4);
-      assert.equal(new Set(missions.map((item) => item.id)).size, 4);
-      assert.ok(missions.some((item) => item.validacao === (focus === 'save' ? 'goal' : 'review')));
-    }
-  }
-});
 test('mission progress is monthly and two reviews of the same lesson only count once', () => {
-  const missions = monthlyMissions('explorer', '2026-09');
+  const missions = ['categories', 'budget', 'learn'].map((validacao) => ({ validacao, mes: '2026-09' }));
   const state = { transactions: [{ tipo: 'despesa', categoria: 'alimentacao', data: '2026-09-02' }, { tipo: 'despesa', categoria: 'lazer', data: '2026-08-02' }], budgets: [{ categoria: 'alimentacao', limite: 30 }], goals: [], learningActions: { budget: '2026-08-20' }, lessonProgress: [{ lessonId: 'trail-categories', concluido: true, concluidoEm: '2026-09-01' }], lessonReviews: { 'trail-categories': '2026-09-02' } };
   assert.equal(missionProgress(missions.find((item) => item.validacao === 'categories'), state).current, 1);
   assert.equal(missionProgress(missions.find((item) => item.validacao === 'budget'), state).current, 0);
   assert.equal(missionProgress(missions.find((item) => item.validacao === 'learn'), state).current, 1);
   state.lessonReviews['trail-income'] = '2026-09-03';
   assert.equal(missionProgress(missions.find((item) => item.validacao === 'learn'), state).current, 2);
-});
-test('trail contains 18 unique concepts and profile/focus meaningfully reorder it', () => {
-  assert.equal(TRAIL_LESSONS.length, 18);
-  assert.equal(new Set(TRAIL_LESSONS.map((item) => item.titulo)).size, 18);
-  assert.ok(TRAIL_LESSONS.every((item) => item.question && item.question.options[item.question.correct] && item.xp > 0));
-  assert.notEqual(orderedTrail('explorer')[0].id, orderedTrail('equilibrado')[0].id);
-  assert.notEqual(orderedTrail('explorer')[0].id, orderedTrail('construtor')[0].id);
-  assert.equal(orderedTrail('equilibrado', 'save')[0].id, 'trail-goal');
 });

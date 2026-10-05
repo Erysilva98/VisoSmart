@@ -80,6 +80,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
 
   function selectCategory(category: CategoryId) {
     recordLearningAction(tipo === 'despesa' ? 'expenseCategories' : 'incomeCategories');
+    useStore.getState().recordPractice(tipo === 'despesa' ? 'expenseCategories' : 'incomeCategories', category);
     setCategoria(category);
     setStep('valor');
   }
@@ -119,7 +120,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
     showNotice({
       message: `${tipo === 'receita' ? 'Entrada' : 'Despesa'} de ${formatCurrency(amount)} em ${CATEGORIES[categoria].nome} registrada.`,
       actionLabel: 'Desfazer',
-      onAction: () => useStore.getState().deleteTransaction(transactionId),
+      onAction: () => { const store = useStore.getState(); if (store.transactions.some((item) => item.id === transactionId)) { store.deleteTransaction(transactionId); store.recordPractice('undo', transactionId); } },
     });
   }
 
