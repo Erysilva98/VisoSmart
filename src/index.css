@@ -384,6 +384,26 @@ body {
 .home-insights .home-categories[data-expanded="true"] .donut-compact { align-items: start; padding-top: 6px; }
 .home-insights .home-categories[data-expanded="true"] .category-legend > button { min-height: 32px; }
 
+.profile-missions-toggle { display: none; }
+@media (max-width: 767px) and (max-height: 780px) {
+  .profile-missions-toggle { display: flex; }
+  .profile-missions-anchor { position: relative; }
+  .profile-missions:not([data-expanded="true"]) .profile-mission-list > article:not(:first-child) { display: none; }
+  .profile-missions[data-expanded="true"] .profile-mission-list {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 35;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 16px;
+    background: #F4F7FB;
+    padding: 4px;
+    box-shadow: 0 12px 30px -8px rgb(9 20 51 / 28%);
+  }
+}
+
 @media (max-width: 767px) {
   .home-main:has(.home-interactive) { grid-template-rows: auto auto minmax(0, 1fr); }
   .home-main:has(.home-interactive) .home-insights { grid-template-rows: minmax(0, 1fr) auto; }
@@ -395,6 +415,7 @@ body {
   .home-main:has(.home-interactive) .calendar-compact[data-expanded="true"] .calendar-day > div { display: none; }
   .home-main:has(.home-interactive) .home-insights header button { min-height: 32px; }
   .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .category-legend > button { min-height: 32px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .donut-compact { padding-right: 0; }
 }
 @media (max-width: 767px) and (max-height: 660px) {
   .home-main:has(.home-interactive) .home-categories-slot { min-height: 100px; }
