@@ -1,4 +1,4 @@
-import { ArrowDownLeft, BookOpen, ChevronRight, Eye, EyeOff, ReceiptText, SlidersHorizontal, Target } from 'lucide-react';
+import { ArrowDownLeft, BookOpen, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { CATEGORIES } from '@/data/categories';
 import { formatCurrency } from '@/lib/format';
@@ -9,12 +9,7 @@ export function InteractiveBalanceHome({ props }: { props: HomeVariantProps }) {
   const [done, total] = props.lessonProgress.split('/').map(Number);
   const lessonPercent = total > 0 ? Math.min(100, done / total * 100) : 0;
   const money = (value: number) => props.hidden ? '••••' : formatCurrency(value);
-  const actions = [
-    { label: 'Extrato', icon: ReceiptText, onClick: props.onStatement },
-    { label: 'Aprender', icon: BookOpen, onClick: props.onLearn },
-    { label: 'Metas', icon: Target, onClick: props.onGoals },
-    { label: 'Limites', icon: SlidersHorizontal, onClick: props.onLimits },
-  ];
+
 
   return <div className="home-interactive grid gap-2">
     <section aria-label="Resumo do dinheiro" className="rounded-[22px] border border-white/90 bg-gradient-to-br from-white via-[#F8FAFF] to-[#EDF2FF] px-4 py-3.5 shadow-[inset_0_1px_0_#FFFFFF,0_10px_28px_-16px_rgba(38,54,140,0.35)] ring-1 ring-primary-200/70 backdrop-blur-xl">
@@ -37,8 +32,6 @@ export function InteractiveBalanceHome({ props }: { props: HomeVariantProps }) {
       <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2 text-xs font-semibold text-violet-700"><span>Próximo desafio</span><span>{props.lessonProgress}</span></span><span className="mt-0.5 block truncate text-sm font-bold text-ink-900">{props.lessonTitle ?? 'Trilha concluída!'}</span><span className="mt-1 flex items-center justify-between gap-2 text-xs"><span className="text-ink-600">{props.lessonTitle ? props.lessonDuration ?? '2 min' : 'Veja suas conquistas'}</span><span className="inline-flex items-center font-bold text-violet-700">{props.lessonTitle ? 'Continuar' : 'Ver trilha'}<ChevronRight className="h-4 w-4" /></span></span><span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-ink-100"><span className="block h-full rounded-full bg-gradient-to-r from-violet-600 to-primary-600" style={{ width: `${lessonPercent}%` }} /></span></span>
     </button>
 
-    <nav aria-label="Acesso rápido" className="grid grid-cols-4 gap-1 rounded-2xl border border-ink-200/70 bg-white p-1">
-      {actions.map(({ label, icon: Icon, onClick }, index) => <button type="button" key={label} onClick={onClick} className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-primary-800 hover:bg-primary-50"><span className={`flex h-7 w-7 items-center justify-center rounded-lg ${index === 0 ? 'bg-primary-100 text-primary-700' : 'bg-ink-100 text-ink-800'}`}><Icon className="h-[18px] w-[18px]" /></span><span className="text-xs font-medium">{label}</span></button>)}
-    </nav>
+
   </div>;
 }
