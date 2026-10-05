@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 import { dateRangeLabel, parseDateRange, type DateRange } from '@/lib/dateRange';
+import { CATEGORY_ICONS } from '@/data/categoryIcons';
+import { categoryOrder } from '@/lib/personalization';
 import { Dialog } from '@/components/ui/Dialog';
 import { parseAmount } from '@/lib/money';
 import { showNotice } from '@/lib/uiNotice';
@@ -34,6 +36,8 @@ export function Transactions() {
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
+  const preferences = useStore((s) => s.preferences);
+  const availableCategories = [...new Set([...(filter !== 'despesa' ? categoryOrder('receita', preferences) : []), ...(filter !== 'receita' ? categoryOrder('despesa', preferences) : [])])];
   const transactions = useStore((s) => s.transactions);
   const [deleted, setDeleted] = useState<Transaction | null>(null);
   const restoreTransaction = useStore((s) => s.restoreTransaction);
@@ -53,7 +57,12 @@ export function Transactions() {
 
   const view = useMemo(() => getTransactionView(transactions, { month: selectedMonth, dateRange, type: filter, category: categoryFilter, search }), [transactions, selectedMonth, dateRange, filter, categoryFilter, search]);
   const monthView = useMemo(() => getTransactionView(transactions, { month: selectedMonth, dateRange }), [transactions, selectedMonth, dateRange]);
-  const filteredTotal = view.items.reduce((sum, item) => sum + Math.round(item.valor * 100), 0) / 100;
+  const categoryView = useMemo(() => getTransactionView(transactions, { month: selectedMonth, dateRange, type: filter, search }), [transactions, selectedMonth, dateRange, filter, search]);
+  const categoryTotal = view.items.reduce((sum, item) => sum + Math.round(item.valor * 100), 0) / 100;
+  const allCategoryTotal = categoryView.items.reduce((sum, item) => sum + Math.round(item.valor * 100), 0) / 100;
+  const selectedCategory = categoryFilter ? CATEGORIES[categoryFilter] : null;
+  const FilterIcon = selectedCategory ? CATEGORY_ICONS[selectedCategory.icon] ?? ChartPie : ChartPie;
+  const pickerCategories = [...new Set([...availableCategories, ...(dateRange ? categoryView.items.map((item) => item.categoria) : [])])];
   const hasFilters = Boolean(dateRange) || filter !== 'all' || Boolean(categoryFilter) || Boolean(search.trim());
   useEffect(() => { if (hasFilters && view.items.length > 0 && getMonthKey(selectedMonth) === getMonthKey(new Date())) recordLearningAction('filter'); }, [hasFilters, view.items.length, selectedMonth, recordLearningAction]);
   const recordPractice = useStore((s) => s.recordPractice);
@@ -68,9 +77,11 @@ export function Transactions() {
     return () => clearTimeout(timer);
   }, [search, selectedKey, recordPractice]);
   function applyPeriod(range: DateRange | null) {
+    if (range) setCategoryFilter(null);
     setParams((previous) => {
       const next = new URLSearchParams(previous);
       next.delete('from'); next.delete('to'); next.delete('add');
+      if (range) next.delete('category');
       if (range) { next.set('from', range.from); next.set('to', range.to); next.set('month', range.from.slice(0, 7)); }
       return next;
     }, { replace: true });
@@ -94,7 +105,11 @@ export function Transactions() {
 
     <div className="mb-3 space-y-2">
       <div className="relative"><Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-400" /><input aria-label="Buscar descrição ou categoria" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar descrição ou categoria" className="input min-h-11 py-2 pl-9 pr-10 text-xs" />{search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca" className="absolute right-0 top-0 flex h-11 w-10 items-center justify-center text-ink-400"><X className="h-3.5 w-3.5" /></button>}</div>
-      <div className="flex flex-wrap items-center gap-2"><div className="grid w-full grid-cols-3 rounded-xl border border-ink-200/70 bg-white p-1">{(['all', 'receita', 'despesa'] as const).map((type) => <button key={type} type="button" aria-pressed={filter === type} onClick={() => setFilter(type)} className={`min-h-11 rounded-lg px-2 text-[11px] font-medium ${filter === type ? (type === 'receita' ? 'bg-income text-white' : type === 'despesa' ? 'bg-expense text-white' : 'bg-primary-600 text-white') : (type === 'receita' ? 'text-income hover:bg-green-50' : type === 'despesa' ? 'text-expense hover:bg-red-50' : 'text-ink-500')}`}>{type === 'all' ? 'Todos' : type === 'receita' ? 'Entradas' : 'Despesas'}</button>)}</div><button type="button" onClick={() => setShowPeriod(true)} aria-label={dateRange ? `Alterar período: ${dateRangeLabel(dateRange, true)}` : 'Selecionar dia ou intervalo'} title={dateRange ? dateRangeLabel(dateRange, true) : 'Selecionar período'} className={`flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border px-2 text-left text-[11px] font-semibold ${dateRange ? 'border-primary-400 bg-primary-50 text-primary-800' : 'border-ink-200 bg-white text-primary-700'}`}><CalendarDays className="h-4 w-4 shrink-0" /><span className="min-w-0 truncate">{dateRange ? dateRangeLabel(dateRange) : 'Período'}</span></button><button type="button" onClick={() => setShowCategoryPicker(true)} aria-label={categoryFilter ? `Categoria ${CATEGORIES[categoryFilter].nome}. Alterar filtro` : 'Escolher categoria'} className="flex min-h-11 min-w-0 flex-1 items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-2 text-left text-[11px] text-primary-700">{categoryFilter ? <CategoryIcon category={categoryFilter} compact /> : <ChartPie className="h-4 w-4 shrink-0" />}<span className="min-w-0 flex-1 truncate">{hasFilters ? `${filter === 'receita' ? 'Entradas' : filter === 'despesa' || categoryFilter && CATEGORIES[categoryFilter].tipo === 'despesa' ? 'Gastos' : 'Registros'} ${formatCurrency(filteredTotal)}` : 'Categorias'}</span></button></div>
+      <div className="grid grid-cols-5 gap-0.5 rounded-xl border border-ink-200 bg-white p-1" aria-label="Filtros do extrato">
+        {(['all', 'receita', 'despesa'] as const).map((type) => <button key={type} type="button" aria-pressed={filter === type} onClick={() => setFilter(type)} className={`min-h-11 min-w-0 rounded-lg text-[10px] font-medium sm:text-xs ${filter === type ? type === 'receita' ? 'bg-income text-white' : type === 'despesa' ? 'bg-expense text-white' : 'bg-primary-600 text-white' : 'text-ink-600 hover:bg-ink-50'}`}>{type === 'all' ? 'Todos' : type === 'receita' ? 'Entradas' : 'Despesas'}</button>)}
+        <button type="button" onClick={() => setShowPeriod(true)} aria-label={dateRange ? `Alterar período: ${dateRangeLabel(dateRange, true)}` : 'Selecionar dia ou intervalo'} className={`flex min-h-11 min-w-0 flex-col items-center justify-center rounded-lg text-[10px] ${dateRange ? 'bg-primary-50 text-primary-800' : 'text-ink-600'}`}><CalendarDays className="h-3.5 w-3.5" /><span className="w-full truncate">{dateRange ? dateRangeLabel(dateRange) : 'Período'}</span></button>
+        <button type="button" onClick={() => setShowCategoryPicker(true)} aria-label={selectedCategory ? `${selectedCategory.nome}: ${formatCurrency(categoryTotal)}. Alterar categoria` : `Todas as categorias${dateRange ? `: ${formatCurrency(categoryTotal)}` : ''}. Escolher categoria`} style={selectedCategory ? { color: selectedCategory.cor, backgroundColor: `${selectedCategory.cor}12` } : undefined} className="flex min-h-11 min-w-0 flex-col items-center justify-center rounded-lg px-0.5 text-[10px] text-ink-600"><FilterIcon className="h-4 w-4 shrink-0" /><span className="w-full truncate">{selectedCategory?.nome ?? 'Categorias'}</span>{(selectedCategory || dateRange) && <span className="max-w-full break-all text-center text-[9px] font-semibold leading-tight text-ink-900">{formatCurrency(categoryTotal)}</span>}</button>
+      </div>
       {hasFilters && <div className="flex items-center justify-between gap-2"><span role="status" aria-live="polite" className="text-[11px] text-ink-500">{view.items.length} {view.items.length === 1 ? 'registro encontrado' : 'registros encontrados'}</span><button type="button" onClick={clearFilters} className="min-h-9 text-[11px] font-semibold text-primary-700">Limpar filtros</button></div>}
     </div>
 
@@ -102,7 +117,7 @@ export function Transactions() {
     <FAB onClick={() => setShowAdd(true)} />
     <QuickAddModal open={showAdd} onClose={() => setShowAdd(false)} />
     {showPeriod && <DateRangePicker value={dateRange} month={selectedMonth} onApply={applyPeriod} onClose={() => setShowPeriod(false)} />}
-    {showCategoryPicker && <Dialog title="Filtrar categoria" onClose={() => setShowCategoryPicker(false)}><div className="grid max-h-[55dvh] grid-cols-3 gap-2 overflow-y-auto"><button type="button" onClick={() => { setCategoryFilter(null); setShowCategoryPicker(false); }} className={`flex min-h-16 flex-col items-center justify-center rounded-xl border p-2 text-[11px] ${!categoryFilter ? 'border-primary-500 bg-primary-50' : 'border-ink-200'}`}><ChartPie className="mb-1 h-5 w-5" />Todas</button>{Object.values(CATEGORIES).filter((category) => category.tipo !== 'objetivo' && (filter === 'all' || category.tipo === filter || category.tipo === 'ambos') || filter === 'all' && (category.id === 'metas' || category.id === 'saque')).map((category) => <button key={category.id} type="button" aria-pressed={categoryFilter === category.id} onClick={() => { setCategoryFilter(category.id); setShowCategoryPicker(false); }} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border p-1 text-center text-[10px] ${categoryFilter === category.id ? 'border-primary-500 bg-primary-50' : 'border-ink-200'}`}><CategoryIcon category={category.id} compact /><span className="line-clamp-2">{category.nome}</span></button>)}</div></Dialog>}
+    {showCategoryPicker && <Dialog title="Filtrar categoria" onClose={() => setShowCategoryPicker(false)}><div className="grid max-h-[55dvh] grid-cols-3 gap-2 overflow-y-auto"><button type="button" onClick={() => { setCategoryFilter(null); setShowCategoryPicker(false); }} className={`flex min-h-16 flex-col items-center justify-center rounded-xl border p-2 text-[11px] ${!categoryFilter ? 'border-primary-500 bg-primary-50' : 'border-ink-200'}`}><ChartPie className="mb-1 h-5 w-5" />Todas<span className="mt-1 font-semibold">{formatCurrency(allCategoryTotal)}</span></button>{pickerCategories.map((id) => CATEGORIES[id]).map((category) => <button key={category.id} type="button" aria-pressed={categoryFilter === category.id} onClick={() => { setCategoryFilter(category.id); setShowCategoryPicker(false); }} className={`flex min-h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border p-1 text-center text-[10px] ${categoryFilter === category.id ? 'border-primary-500 bg-primary-50' : 'border-ink-200'}`}><CategoryIcon category={category.id} compact /><span className="line-clamp-2">{category.nome}</span><span className="font-semibold">{formatCurrency(categoryView.items.filter((item) => item.categoria === category.id).reduce((sum, item) => sum + Math.round(item.valor * 100), 0) / 100)}</span></button>)}</div></Dialog>}
     {pendingDelete && <Dialog title="Excluir registro?" onClose={() => setPendingDelete(null)}><p className="text-sm text-ink-700">Tem certeza de que deseja excluir <strong>{pendingDelete.descricao || CATEGORIES[pendingDelete.categoria].nome}</strong> de {formatCurrency(pendingDelete.valor)}?</p><p className="mt-2 text-xs text-ink-500">Você poderá desfazer logo depois.</p><div className="mt-5 flex gap-2"><button type="button" onClick={() => setPendingDelete(null)} className="btn-secondary flex-1">Cancelar</button><button type="button" onClick={() => { remove(pendingDelete); setPendingDelete(null); }} className="btn flex-1 bg-expense px-4 py-3 text-white">Excluir</button></div></Dialog>}
     {editing && <TransactionEditor transaction={editing} onClose={() => setEditing(null)} onSave={(transaction) => { updateTransaction(editing.id, transaction); setEditing(null); showNotice({ message: 'Registro atualizado.' }); }} onDelete={() => { setPendingDelete(editing); setEditing(null); }} />}
   </Layout>;

@@ -559,8 +559,13 @@ export const useStore = create<Store>((set, get) => ({
     if (!s.onboarding.profile) return;
     const monthKey = getCurrentMonthKey();
     const current = s.challenges.filter((item) => item.id.startsWith('journey-v2-') && item.mes === monthKey && item.perfil === s.onboarding.profile);
-    if (current.length === 4) return;
-    const next = monthlyMissions(s.onboarding.profile, monthKey, s.preferences?.focus, s).map((item) => current.find((old) => old.id === item.id) ?? { ...item, concluido: s.challengeHistory.some((entry) => entry.templateId === item.id) });
+    const hasRetiredAction = (mission: typeof current[number]) => mission.requirements?.some((requirement) => requirement.actions.some((action) => ['exportReport', 'dataHelp', 'privacy'].includes(action)));
+    if (current.length === 4 && !current.some(hasRetiredAction)) return;
+    const next = monthlyMissions(s.onboarding.profile, monthKey, s.preferences?.focus, s).map((item) => {
+      const existing = current.find((old) => old.id === item.id);
+      if (existing && hasRetiredAction(existing)) return { ...existing, titulo: item.titulo, requirements: item.requirements };
+      return existing ?? { ...item, concluido: s.challengeHistory.some((entry) => entry.templateId === item.id) };
+    });
     set({ challenges: [...s.challenges.filter((item) => !current.some((old) => old.id === item.id)), ...next] });
     get()._persist();
   },

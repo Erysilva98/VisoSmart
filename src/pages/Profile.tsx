@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Download, SlidersHorizontal, Tags, Trash2 } from 'lucide-react';
+import { SlidersHorizontal, Tags, Trash2 } from 'lucide-react';
 import { CategoryManager } from '@/components/ui/CategoryManager';
 import { ProfileJourney } from '@/components/journey/ProfileJourney';
 import { Layout } from '@/components/ui/Layout';
 import { Dialog } from '@/components/ui/Dialog';
 import { useStore } from '@/store/useStore';
+import { APP_BUILD, APP_VERSION } from '@/lib/appVersion';
 import { formatCurrency } from '@/lib/format';
 
 export function Profile() {
@@ -15,23 +16,15 @@ export function Profile() {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [reset, setReset] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const archived = state.investments.filter((item) => !item.metaId);
-  async function exportData() {
-    setExporting(true); setMessage('');
-    try { const { downloadFinancialReport } = await import('@/lib/financialReport'); downloadFinancialReport(useStore.getState()); state.recordPractice('exportReport'); }
-    catch { setMessage('Erro ao gerar PDF. Tente novamente.'); }
-    finally { setExporting(false); }
-  }
   return <Layout title="Meu perfil" compact>
     <h1 className="sr-only">Meu perfil</h1>
     <ProfileJourney />
     {message && <p role="alert" className="mb-3 text-xs text-expense">{message}</p>}
     <div className="mb-3 grid grid-cols-2 gap-2" aria-label="Preferências do perfil"><button type="button" onClick={() => { state.recordLearningAction('profile'); setPreferencesOpen(true); }} className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-2xl border border-ink-200 bg-white px-2 text-center text-xs font-semibold text-primary-700 hover:bg-primary-50"><Tags className="h-4 w-4 shrink-0" /><span>Minhas categorias</span></button><Link to="/orcamentos" className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-2xl border border-ink-200 bg-white px-2 text-center text-xs font-semibold text-primary-700 hover:bg-primary-50"><SlidersHorizontal className="h-4 w-4 shrink-0" /><span>Meus limites</span></Link></div>
-    <details onToggle={(event) => { if (event.currentTarget.open) state.recordPractice('dataHelp'); }} className="rounded-2xl border border-ink-200 bg-white px-4 py-2"><summary className="flex min-h-10 cursor-pointer items-center gap-2 text-xs font-semibold"><Download className="h-4 w-4 text-primary-700" />Meus dados e relatório</summary><p className="mt-2 text-xs text-ink-500">Seus registros ficam neste dispositivo. O PDF reúne saldo inicial, metas, gráfico e gastos.</p><button type="button" onClick={exportData} disabled={exporting} className="text-link mt-1">{exporting ? 'Gerando PDF...' : 'Baixar PDF'}</button></details>
-    <details onToggle={(event) => { if (event.currentTarget.open) state.recordPractice('privacy'); }} className="mt-2 rounded-2xl border border-ink-200 bg-white px-4 py-2"><summary className="flex min-h-10 cursor-pointer items-center text-xs font-semibold">Como proteger meus dados</summary><p className="py-2 text-xs leading-relaxed text-ink-600">Seus dados ficam neste dispositivo. Proteja o acesso ao aparelho e não compartilhe senhas. O PDF contém informações pessoais: guarde-o em um lugar privado. Ele serve para consulta e não restaura automaticamente o app. Apagar os dados remove o histórico e não pode ser desfeito.</p></details>
     {(archived.length > 0 || state.plannedExpenses.length > 0 || state.creditCards.length > 0) && <details className="mt-2 rounded-2xl border border-ink-200 bg-white px-4 py-2"><summary className="min-h-10 cursor-pointer pt-3 text-xs font-semibold">Dados antigos</summary><p className="mt-2 text-xs text-ink-500">Dados de funções antigas foram preservados neste dispositivo.</p>{archived.map((item) => <p key={item.id} className="mt-2 flex justify-between gap-2 text-xs"><span>{item.nome}</span><span>{formatCurrency(item.valor)}</span></p>)}<p className="mt-2 text-xs text-ink-500">{state.plannedExpenses.length} compromissos · {state.creditCards.length} cartões</p></details>}
     <button type="button" onClick={() => setReset(true)} className="mx-auto mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-xs font-semibold text-expense"><Trash2 className="h-4 w-4" />Apagar meus dados</button>
+    <footer className="mt-4 pb-2 text-center text-[10px] leading-relaxed text-ink-500"><p>Desenvolvido por Erimilson Silva</p><p>NYX · Versão {APP_VERSION} · Build {APP_BUILD}</p></footer>
     {preferencesOpen && <CategoryManager onClose={() => setPreferencesOpen(false)} />}
     {reset && <Dialog title="Apagar todos os dados?" onClose={() => setReset(false)}><p className="text-sm text-ink-500">Isso remove registros, metas e histórico deste dispositivo. Não pode ser desfeito.</p><div className="mt-4 flex gap-2"><button type="button" className="btn-secondary flex-1" onClick={() => setReset(false)}>Cancelar</button><button type="button" disabled={busy} className="btn flex-1 bg-expense p-3 text-white" onClick={async () => { setBusy(true); try { await state.resetApp(); navigate('/'); } catch { setMessage('Não foi possível apagar. Tente novamente.'); setReset(false); } finally { setBusy(false); } }}>Apagar</button></div></Dialog>}
   </Layout>;

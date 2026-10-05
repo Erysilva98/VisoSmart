@@ -17,6 +17,27 @@ const month = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).p
 const empty = () => ({ transactions: [], goals: [], budgets: [], lessonProgress: [], practiceEvents: [] });
 const movement = (id, category, value, period = month) => ({ id, tipo: 'despesa', categoria: category, valor: value, data: `${period}-01T12:00:00` });
 
+test('removed export and data panels never block lessons or monthly missions', () => {
+  const retired = new Set(['exportReport', 'dataHelp', 'privacy']);
+  const activities = [...TRAIL_LESSONS, ...profiles.flatMap((profile) => Array.from({ length: 12 }, (_, i) => monthlyMissions(profile, `2026-${String(i + 1).padStart(2, '0')}`)).flat())];
+  for (const activity of activities) assert.ok(activity.requirements.every((rule) => rule.actions.every((action) => !retired.has(action))), activity.id);
+});
+
+test('existing monthly missions migrate retired actions without losing completion or XP', () => {
+  const previous = useStore.getState();
+  try {
+    const missions = monthlyMissions('construtor', month);
+    missions[0] = { ...missions[0], concluido: true, requirements: [{ actions: ['exportReport'], label: 'Old export', route: '/perfil' }] };
+    useStore.setState({ onboarding: { completed: true, profile: 'construtor', score: 0 }, challenges: missions, challengeHistory: [], xp: 120 });
+    useStore.getState()._ensureMonthlyChallenges();
+    const updated = useStore.getState();
+    assert.equal(updated.challenges.length, 4);
+    assert.equal(updated.challenges[0].concluido, true);
+    assert.equal(updated.xp, 120);
+    assert.ok(updated.challenges[0].requirements.every((rule) => !rule.actions.includes('exportReport')));
+  } finally { useStore.setState(previous, true); }
+});
+
 test('90 distinct lessons: three linear curricula, six modules each, with explicit practice and quizzes', () => {
   assert.equal(TRAIL_LESSONS.length, 90);
   assert.equal(new Set(TRAIL_LESSONS.map((item) => item.id)).size, 90);

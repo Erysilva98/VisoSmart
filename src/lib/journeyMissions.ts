@@ -20,7 +20,7 @@ const BANK = {
     ['Abra seu mês|statement', 'Investigue seu maior gasto|top', 'Confira um limite|inspectLimit', 'Escolha um teto para acompanhar|limit'],
     ['Mantenha registros confiáveis|records', 'Encontre uma escolha de consumo|category|review', 'Coloque seu objetivo na conversa|goalDetails', 'Compare gasto e plano|category|inspectLimit'],
     ['Revise seus atalhos|configure', 'Escolha um gasto para observar|category', 'Prepare um limite possível|limit', 'Confira o objetivo para continuar|goalDetails'],
-    ['Visite outro período|periods', 'Revise seus motivos de gasto|configure', 'Veja o caminho da sua meta|goalDetails', 'Guarde seu relatório|report'],
+    ['Visite outro período|periods', 'Revise seus motivos de gasto|configure', 'Veja o caminho da sua meta|goalDetails', 'Confira o fechamento do mês|home|income'],
   ],
   equilibrado: [
     ['Faça uma amostra do histórico|records', 'Compare dois grupos|compare', 'Crie um teto com referência|category|limit', 'Conecte saldo e objetivo|home|goal'],
@@ -34,10 +34,10 @@ const BANK = {
     ['Investigue a maior categoria|top|review', 'Compare com o limite|category|inspectLimit', 'Confira sua reserva|goalDetails|home', 'Concretize a próxima mudança|limit'],
     ['Escolha uma prioridade com dados|compare', 'Defina um teto para ela|category|limit', 'Acompanhe dias e gastos|calendar|category', 'Revise o resultado e o plano|inspectLimit|home'],
     ['Leia períodos anteriores|periods|search', 'Prepare limites para prioridades|twoLimits', 'Confira o plano da meta|goalDetails', 'Avalie o que cabe reservar|home|contribution'],
-    ['Revise a organização dos dados|configure|review', 'Reavalie duas prioridades|twoLimits', 'Contextualize o avanço da meta|goalDetails|home', 'Exporte sua revisão|report'],
+    ['Revise a organização dos dados|configure|review', 'Reavalie duas prioridades|twoLimits', 'Contextualize o avanço da meta|goalDetails|home', 'Conclua sua revisão com evidências|category|search'],
   ],
   construtor: [
-    ['Audite uma amostra do histórico|search|review', 'Confronte classificações|compare|review', 'Explique a concentração de gastos|top|search', 'Preserve evidências da revisão|report'],
+    ['Audite uma amostra do histórico|search|review', 'Confronte classificações|compare|review', 'Explique a concentração de gastos|top|search', 'Relacione evidências e recursos|income|home'],
     ['Audite a estrutura de despesas|expenseConfig|compare', 'Separe fontes e saldo inicial|incomeConfig|income', 'Otimize os atalhos de registro|configure', 'Confira a aplicação da estrutura|records|category'],
     ['Selecione prioridades com evidência|compare|top', 'Defina tetos estratégicos|twoLimits', 'Contextualize o consumo dos tetos|inspectLimit|calendar', 'Recalibre após comparar períodos|periods|adjust'],
     ['Investigue uma escolha ajustável|search|review', 'Analise o contexto da categoria|category|home', 'Cruze consumo e objetivo|category|goalDetails', 'Materialize uma intervenção|limit'],
@@ -48,7 +48,7 @@ const BANK = {
     ['Investigue a concentração do mês|top|review', 'Confronte a intenção do limite|category|inspectLimit', 'Audite as movimentações do grupo|category|search|review', 'Converta evidência em intervenção|home|limit'],
     ['Escolha onde uma mudança importa|compare|top', 'Compare contexto e histórico|periods|search', 'Recalibre uma prioridade|category|adjust', 'Avalie resultado e disponibilidade|inspectLimit|home'],
     ['Leia o comportamento recente|periods|compare', 'Reavalie seus tetos estratégicos|twoLimits', 'Revise ritmo e capacidade|goalDetails|contribution', 'Prepare uma próxima ação concreta|home|limit'],
-    ['Audite categorias e origens|expenseConfig|incomeConfig|configure', 'Reavalie prioridades de controle|twoLimits|periods', 'Revise objetivos e disponibilidade|goalDetails|home', 'Preserve a revisão e proteja os dados|report|privacy'],
+    ['Audite categorias e origens|expenseConfig|incomeConfig|configure', 'Reavalie prioridades de controle|twoLimits|periods', 'Revise objetivos e disponibilidade|goalDetails|home', 'Confira a revisão e organize o próximo ciclo|periods|configure'],
   ],
 };
 
@@ -97,8 +97,6 @@ export function monthlyMissions(profile: ProfileType, month: string, _focus: Jou
     calendar: [req(['calendar'], 'Selecionar um dia no calendário do mês', `/dashboard?month=${month}`)],
     days: [req(['calendar'], 'Consultar dois dias diferentes do mês', `/dashboard?month=${month}`, { count: 2, distinct: true })],
     periods: [req(['month'], 'Consultar dois meses diferentes pelo seletor; períodos vazios também contam', '/dashboard', { count: 2, distinct: true })],
-    report: [req(['exportReport'], 'No Perfil, baixar o PDF em Meus dados e relatório', '/perfil')],
-    privacy: [req(['privacy'], 'Ler Como proteger meus dados no Perfil', '/perfil')],
   };
   return BANK[normalized][index].map((spec, position) => {
     const [titulo, ...keys] = spec.split('|');

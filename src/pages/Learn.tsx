@@ -33,7 +33,7 @@ export function Learn() {
 }
 
 function TrailHeading({ profileName, completedCount, onShowHistory }: { profileName: string; completedCount: number; onShowHistory: () => void }) {
-  return <div className="flex items-center justify-between gap-2"><div className="min-w-0"><h1 className="text-lg font-semibold text-ink-900">Trilha de Aprendizado</h1><p className="mt-1 text-xs text-violet-700">{profileName} · {completedCount}/30 etapas</p></div><button type="button" onClick={onShowHistory} aria-label="Ver módulos e etapas" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100"><ChevronDown className="h-4 w-4" /></button></div>;
+  return <div className="flex items-center justify-between gap-2"><div className="min-w-0"><h1 className="text-lg font-semibold text-ink-900">Trilha de Aprendizado</h1><p className="mt-1 text-xs text-violet-700">{profileName}</p></div><button type="button" onClick={onShowHistory} aria-label="Ver módulos e etapas" className="flex h-11 shrink-0 items-center justify-center gap-1 px-2 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100"><span className="text-xs font-semibold">{completedCount}/30</span><ChevronDown className="h-4 w-4" /></button></div>;
 }
 
 function LessonCard({ lesson, done, onFinished, profileName, completedCount, onShowHistory, message, legacy }: { lesson: Lesson; done: boolean; onFinished: (text: string) => void; profileName: string; completedCount: number; onShowHistory: () => void; message: string; legacy: number }) {
