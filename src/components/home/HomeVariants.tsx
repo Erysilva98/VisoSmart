@@ -1,6 +1,6 @@
-import { ArrowDownLeft, ArrowUpRight, BookOpen, ChevronRight, Eye, EyeOff, Plus, ReceiptText, Sparkles, Target } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, BookOpen, ChevronRight, Eye, EyeOff, Plus, Sparkles, Target } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
-import { ProfileMark } from '@/components/journey/NexoMark';
+import { ProfileMark } from '@/components/journey/VisoMark';
 import { CATEGORIES } from '@/data/categories';
 import { PROFILES } from '@/data/profiles';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -70,10 +70,6 @@ function StateMessage({ props }: { props: HomeVariantProps }) {
   const negative = props.view.balance < 0 && !props.hidden;
   return <p role="status" className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-medium ${negative ? 'bg-rose-50 text-rose-900' : 'bg-primary-50 text-primary-800'}`}><Sparkles className="h-3.5 w-3.5 shrink-0" />{props.hidden ? 'Mostre os valores para ver sua situação.' : message(props.view)}</p>;
 }
-function QuickActions({ props, compact = false }: { props: HomeVariantProps; compact?: boolean }) {
-  const actions = [{ label: 'Registrar', icon: Plus, action: props.onAdd }, { label: 'Extrato', icon: ReceiptText, action: props.onStatement }, { label: 'Aprender', icon: BookOpen, action: props.onLearn }, { label: 'Metas', icon: Target, action: props.onGoals }];
-  return <nav aria-label="Ações rápidas" className={`grid grid-cols-4 gap-1 rounded-2xl border border-ink-200/70 bg-white ${compact ? 'p-1' : 'p-1.5'}`}>{actions.map(({ label, icon: Icon, action }) => <button type="button" key={label} onClick={action} className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-primary-700 hover:bg-primary-50"><span className={`flex h-8 w-8 items-center justify-center rounded-xl ${label === 'Registrar' ? 'bg-primary-600 text-white' : 'bg-primary-50'}`}><Icon className="h-[18px] w-[18px]" /></span><span className="text-[11px] font-semibold">{label}</span></button>)}</nav>;
-}
 function NextStep({ props }: { props: HomeVariantProps }) {
   const goal = props.goals.find((item) => item.valorAtual < item.valorAlvo);
   const target = goal ? { title: goal.titulo, label: 'Continuar minha meta', action: props.onGoals, icon: Target } : props.lessonTitle ? { title: props.lessonTitle, label: 'Continuar aprendendo', action: props.onLearn, icon: BookOpen } : { title: 'Registre sua primeira movimentação', label: 'Registrar agora', action: props.onAdd, icon: Plus };
@@ -99,21 +95,21 @@ export function HomeVariantContent(props: HomeVariantProps) {
     {props.variant !== 5 && <Identity profile={props.profile} level={props.level} />}
     {props.variant === 1 && <>
       <section aria-label="Resumo do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white p-4 shadow-sm"><BalanceLabel props={props} /><MainAmount props={props} large /><div className="mt-4"><Flow props={props} /></div></section>
-      <StateMessage props={props} /><QuickActions props={props} /><NextStep props={props} />
+      <StateMessage props={props} /><NextStep props={props} />
     </>}
     {props.variant === 2 && <>
-      <section aria-label="Resumo visual do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-3 shadow-sm"><BalanceLabel props={props} /><div className="mx-auto mt-1 flex h-36 w-36 items-center justify-center rounded-full p-2.5" role="img" aria-label={props.hidden ? 'Proporção oculta' : available === null ? 'Sem entradas para comparar' : `${available}% do dinheiro registrado no mês está livre`} style={{ background: `conic-gradient(#4F6DFF ${props.hidden || available === null ? 0 : available}%, #e8eff7 0)` }}><div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center"><strong data-month-balance className="max-w-[110px] truncate text-lg font-extrabold text-ink-900">{cash(props.view.balance, props.hidden)}</strong><span className="text-[11px] font-medium text-primary-700">{props.hidden || available === null ? 'Sem comparação' : `${available}% livre`}</span></div></div><p className="mt-1 text-center text-[11px] text-ink-600">{props.hidden ? 'Valores ocultos' : 'Disponível para suas escolhas'}</p><div className="mt-2"><Flow props={props} /></div></section>
-      <StateMessage props={props} /><QuickActions props={props} /><RecentExpense props={props} />
+      <section aria-label="Resumo visual do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-3 shadow-sm"><BalanceLabel props={props} /><div className="mx-auto mt-1 flex h-36 w-36 items-center justify-center rounded-full p-2.5" role="img" aria-label={props.hidden ? 'Proporção oculta' : available === null ? 'Sem entradas para comparar' : `${available}% do dinheiro registrado no mês está livre`} style={{ background: `conic-gradient(#426BFF ${props.hidden || available === null ? 0 : available}%, #e8eff7 0)` }}><div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center"><strong data-month-balance className="max-w-[110px] truncate text-lg font-extrabold text-ink-900">{cash(props.view.balance, props.hidden)}</strong><span className="text-[11px] font-medium text-primary-700">{props.hidden || available === null ? 'Sem comparação' : `${available}% livre`}</span></div></div><p className="mt-1 text-center text-[11px] text-ink-600">{props.hidden ? 'Valores ocultos' : 'Disponível para suas escolhas'}</p><div className="mt-2"><Flow props={props} /></div></section>
+      <StateMessage props={props} /><RecentExpense props={props} />
     </>}
     {props.variant === 3 && <>
       <section aria-label="Resumo do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-3 shadow-sm"><BalanceLabel props={props} /><MainAmount props={props} /><p className="mt-2 text-[11px] font-medium text-primary-700">{props.hidden ? 'Valores ocultos' : available === null ? 'Comece com seu primeiro registro' : `${available}% do dinheiro do mês está livre`}</p><p className="mt-1 text-[11px] text-ink-600">{props.hidden ? 'Mostre os valores para ver sua situação.' : message(props.view)}</p></section>
-      <LearningCard props={props} prominent /><Flow props={props} /><QuickActions props={props} compact /><RecentExpense props={props} />
+      <LearningCard props={props} prominent /><Flow props={props} /><RecentExpense props={props} />
     </>}
     {props.variant === 4 && <>
       <section aria-label="Resumo do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-3 shadow-sm"><BalanceLabel props={props} /><MainAmount props={props} /><div className="mt-3"><Flow props={props} /></div></section>
       <StateMessage props={props} />
       <section aria-label="Principais gastos" className="rounded-2xl border border-ink-200/70 bg-white p-3"><div className="mb-2 flex items-center justify-between"><h2 className="text-xs font-bold">Como seu dinheiro foi usado?</h2><button type="button" onClick={props.onStatement} className="flex min-h-9 items-center gap-0.5 text-[11px] font-semibold text-primary-700">Ver extrato<ChevronRight className="h-3.5 w-3.5" /></button></div>{props.view.categories.length ? props.view.categories.slice(0, 3).map((item) => <button type="button" key={item.categoria} onClick={() => props.onCategory(item.categoria)} className="flex min-h-11 w-full items-center gap-2 rounded-lg text-left hover:bg-ink-50"><CategoryIcon category={item.categoria} compact /><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium">{CATEGORIES[item.categoria].nome}</span><span aria-hidden="true" className="mt-1 block h-1 overflow-hidden rounded-full bg-ink-100"><span className="block h-full rounded-full" style={{ width: props.hidden ? '0%' : `${Math.round(item.valor / props.view.expenses * 100)}%`, backgroundColor: CATEGORIES[item.categoria].cor }} /></span></span><span className="text-xs font-semibold">{cash(item.valor, props.hidden)}</span></button>) : <p className="py-2 text-xs text-ink-500">Registre um gasto para ver suas categorias.</p>}</section>
-      <QuickActions props={props} compact /><RecentExpenses props={props} />
+      <RecentExpenses props={props} />
     </>}
     {props.variant === 5 && <>
       <InteractiveBalanceHome props={props} />

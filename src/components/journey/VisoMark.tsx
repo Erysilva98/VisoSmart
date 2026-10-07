@@ -2,13 +2,14 @@ import { useId } from 'react';
 import { Compass, Route } from 'lucide-react';
 import type { ProfileType } from '@/types';
 
-/** Nexo Trail: a continuous N path with an independent arrival point. */
-export function NexoMark({ className = '' }: { className?: string }) {
+/** Eye and rising arrow: clarity, planning and progress. */
+export function VisoMark({ className = '' }: { className?: string }) {
   const gradient = useId();
   return <svg viewBox="0 0 100 100" fill="none" aria-hidden="true" className={className}>
-    <defs><linearGradient id={gradient} x1="20" y1="80" x2="78" y2="22" gradientUnits="userSpaceOnUse"><stop stopColor="#7A63FE" /><stop offset="1" stopColor="#56B8FF" /></linearGradient></defs>
-    <path d="M22 77 32 31 Q33 26 37 31 L65 70 Q69 76 71 68 L77 42" stroke={`url(#${gradient})`} strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="81" cy="22" r="9" fill="#56B8FF" />
+    <defs><linearGradient id={gradient} x1="20" y1="76" x2="78" y2="24" gradientUnits="userSpaceOnUse"><stop stopColor="#7C6BFF" /><stop offset="0.48" stopColor="#FFFFFF" /><stop offset="1" stopColor="#31CFFF" /></linearGradient></defs>
+    <path d="M16 55 Q37 23 62 44 M16 55 C39 87 66 72 82 24" stroke={`url(#${gradient})`} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M68 29 84 20 87 39" fill="#31CFFF" stroke="#31CFFF" strokeWidth="4" strokeLinejoin="round" />
+    <circle cx="42" cy="53" r="10" fill={`url(#${gradient})`} />
   </svg>;
 }
 

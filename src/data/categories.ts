@@ -1,19 +1,19 @@
 import type { CategoryId, CategoryDefinition } from '@/types';
 
-export interface CategoryConfig { id: CategoryId; nome: string; icon: string; cor: string; tipo: 'despesa' | 'receita' | 'ambos' | 'objetivo'; legacy?: boolean; }
+export interface CategoryConfig { id: CategoryId; nome: string; icon: string; cor: string; tipo: 'despesa' | 'receita' | 'ambos' | 'objetivo'; legacy?: boolean; deleted?: boolean; }
 
 export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
   saldo_inicial: { id: 'saldo_inicial', nome: 'Saldo inicial', icon: 'Wallet', cor: '#15803d', tipo: 'receita', legacy: true },
-  metas: { id: 'metas', nome: 'Metas', icon: 'PiggyBank', cor: '#4F6DFF', tipo: 'objetivo' },
-  saque: { id: 'saque', nome: 'Saque', icon: 'ArrowDownToLine', cor: '#4F6DFF', tipo: 'objetivo' },
+  metas: { id: 'metas', nome: 'Metas', icon: 'PiggyBank', cor: '#426BFF', tipo: 'objetivo' },
+  saque: { id: 'saque', nome: 'Saque', icon: 'ArrowDownToLine', cor: '#426BFF', tipo: 'objetivo' },
   mesada: { id: 'mesada', nome: 'Mesada', icon: 'HandCoins', cor: '#15803d', tipo: 'receita' },
-  estagio: { id: 'estagio', nome: 'Estágio', icon: 'BriefcaseBusiness', cor: '#4F6DFF', tipo: 'receita' },
-  bolsa: { id: 'bolsa', nome: 'Bolsa acadêmica', icon: 'GraduationCap', cor: '#7A63FE', tipo: 'receita' },
+  estagio: { id: 'estagio', nome: 'Estágio', icon: 'BriefcaseBusiness', cor: '#426BFF', tipo: 'receita' },
+  bolsa: { id: 'bolsa', nome: 'Bolsa acadêmica', icon: 'GraduationCap', cor: '#7C6BFF', tipo: 'receita' },
   freelas: { id: 'freelas', nome: 'Freelas e bicos', icon: 'Laptop', cor: '#0f766e', tipo: 'receita' },
   presentes: { id: 'presentes', nome: 'Presentes', icon: 'Gift', cor: '#be185d', tipo: 'receita' },
   compras: { id: 'compras', nome: 'Lojas', icon: 'ShoppingBag', cor: '#8b5cf6', tipo: 'despesa' },
   mercado: { id: 'mercado', nome: 'Mercado', icon: 'ShoppingBasket', cor: '#16a34a', tipo: 'despesa' },
-  celular: { id: 'celular', nome: 'Celular', icon: 'Smartphone', cor: '#4F6DFF', tipo: 'despesa' },
+  celular: { id: 'celular', nome: 'Celular', icon: 'Smartphone', cor: '#426BFF', tipo: 'despesa' },
   assinaturas: { id: 'assinaturas', nome: 'Apps e assinaturas', icon: 'PlaySquare', cor: '#0891b2', tipo: 'despesa' },
   jogos: { id: 'jogos', nome: 'Jogos', icon: 'Gamepad2', cor: '#6366f1', tipo: 'despesa' },
   alimentacao: { id: 'alimentacao', nome: 'Alimentação', icon: 'UtensilsCrossed', cor: '#f97316', tipo: 'despesa' },
@@ -37,6 +37,12 @@ export function getCategory(id: CategoryId): CategoryConfig { return CATEGORIES[
 const DEFAULTS = { ...CATEGORIES };
 const DEFAULT_EXPENSES = [...DESPESA_CATEGORIES];
 const DEFAULT_INCOME = [...RECEITA_CATEGORIES];
+export const MAX_CATEGORIES_PER_TYPE = 30;
+export function categoryOptions(type: 'receita' | 'despesa', definitions: CategoryDefinition[] = []): CategoryId[] {
+  const configs = { ...DEFAULTS };
+  for (const definition of definitions) configs[definition.id] = { ...configs[definition.id], ...definition };
+  return [...new Set([...(type === 'receita' ? DEFAULT_INCOME : DEFAULT_EXPENSES), ...definitions.filter((item) => item.id.startsWith('custom_') && (item.tipo === type || item.tipo === 'ambos')).map((item) => item.id)])].filter((id) => !configs[id]?.deleted);
+}
 /** Stable IDs preserve historical records when names change. */
 export function syncCategories(definitions: CategoryDefinition[] = []) {
   for (const id of Object.keys(CATEGORIES) as CategoryId[]) delete CATEGORIES[id];
@@ -51,4 +57,6 @@ export function syncCategories(definitions: CategoryDefinition[] = []) {
       if (definition.tipo === 'receita') RECEITA_CATEGORIES.push(definition.id);
     }
   }
+  DESPESA_CATEGORIES.splice(0, DESPESA_CATEGORIES.length, ...categoryOptions('despesa', definitions));
+  RECEITA_CATEGORIES.splice(0, RECEITA_CATEGORIES.length, ...categoryOptions('receita', definitions));
 }

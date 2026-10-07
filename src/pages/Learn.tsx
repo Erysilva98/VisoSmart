@@ -1,39 +1,58 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { BookOpen, Check, ChevronDown, ChevronRight, LockKeyhole, Sparkles, Trophy } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronRight, Sparkles, Trophy } from 'lucide-react';
 import { Layout } from '@/components/ui/Layout';
 import { Dialog } from '@/components/ui/Dialog';
 import { useStore } from '@/store/useStore';
 import { getLessonsForProfile, type Lesson } from '@/data/lessons';
+import { PROFILES } from '@/data/profiles';
 import { canCompleteLesson } from '@/lib/progress';
+import { lessonPracticeProgress } from '@/lib/practice';
 
 export function Learn() {
   const state = useStore();
   const profile = state.onboarding.profile ?? 'explorer';
-  const lessons = getLessonsForProfile(profile, state.preferences?.focus);
+  const lessons = getLessonsForProfile(profile);
   const completed = new Set(state.lessonProgress.filter((item) => item.concluido).map((item) => item.lessonId));
   const active = lessons.find((item) => !completed.has(item.id));
   const [review, setReview] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [message, setMessage] = useState('');
+  const startLesson = state.startLesson;
+  const activeId = active?.id;
+  useEffect(() => { if (activeId) startLesson(activeId); }, [activeId, startLesson]);
   const lesson = lessons.find((item) => item.id === review) ?? active;
   const done = lessons.filter((item) => completed.has(item.id)).length;
-  const index = lesson ? lessons.findIndex((item) => item.id === lesson.id) : lessons.length;
+  const legacy = state.lessonProgress.filter((item) => item.concluido && !item.lessonId.startsWith('trail-v2-')).length;
 
-  return <Layout title="Aprender" compact>
-    <div className="learn-screen">
-      <header className="learn-header flex items-center justify-between gap-2 rounded-2xl bg-gradient-to-r from-violet-50 to-sky-50 px-4 py-1.5"><h1 className="text-sm font-semibold text-ink-900">Trilha de aprendizado</h1><div className="flex items-center gap-1"><span className="text-xs font-semibold text-violet-700" aria-label={`${done} de ${lessons.length} etapas concluídas`}>{done}/{lessons.length}</span><button type="button" onClick={() => setShowHistory(true)} aria-label="Expandir etapas concluídas" title="Etapas concluídas" className="flex h-10 w-10 items-center justify-center rounded-lg text-violet-700 hover:bg-violet-100"><ChevronDown className="h-4 w-4" /></button></div></header>
-      {message && <p role="status" className="rounded-xl bg-violet-50 px-3 py-1.5 text-[11px] text-violet-700">{message}</p>}
-      {lesson ? <LessonCard key={lesson.id} lesson={lesson} index={index} done={completed.has(lesson.id)} ready={canCompleteLesson(lesson.id, state)} onReview={(answer) => { state.reviewLesson(lesson.id, answer); setMessage('Revisão registrada.'); setReview(null); }} onComplete={(answer) => { state.completeLesson(lesson.id, answer); setMessage(`+${lesson.xp} XP! Próxima etapa liberada.`); setReview(null); }} /> : <section className="rounded-2xl border border-violet-100 bg-white p-6 text-center"><Trophy className="mx-auto h-10 w-10 text-amber-500" /><h2 className="mt-3 font-semibold">Trilha concluída!</h2></section>}
-    </div>
-    {showHistory && <Dialog title="Etapas concluídas" onClose={() => setShowHistory(false)}><div className="grid gap-1">{lessons.filter((item) => completed.has(item.id)).map((item) => <button key={item.id} type="button" onClick={() => { setReview(item.id); setShowHistory(false); }} className="flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-xs hover:bg-ink-50"><Check className="h-4 w-4 text-violet-600" />{item.titulo}</button>)}{done === 0 && <p className="text-xs text-ink-500">Sua primeira etapa aparece aqui depois de concluída.</p>}</div></Dialog>}
+  return <Layout title="Aprender" compact><div className="learn-screen">
+    {lesson ? <LessonCard key={lesson.id} lesson={lesson} profileName={PROFILES[profile].nome} completedCount={done} message={message} legacy={legacy} onShowHistory={() => setShowHistory(true)} done={completed.has(lesson.id)} onFinished={(text) => { setMessage(text); setReview(null); }} /> : <section className="rounded-2xl border border-violet-100 bg-white p-6 text-center"><TrailHeading profileName={PROFILES[profile].nome} completedCount={done} onShowHistory={() => setShowHistory(true)} /><Trophy className="mx-auto h-10 w-10 text-amber-500" /><h2 className="mt-3 font-semibold">30 etapas concluídas!</h2><p className="mt-2 text-sm text-ink-600">Continue aplicando o que aprendeu nas missões mensais.</p><Link to="/perfil" className="btn-primary mt-4">Ver minhas missões</Link></section>}
+  </div>
+  {showHistory && <Dialog title="Sua trilha · 6 módulos" onClose={() => setShowHistory(false)}><div className="max-h-[65dvh] space-y-4 overflow-y-auto">{Array.from(new Set(lessons.map((item) => item.modulo))).map((module) => <section key={module}><h2 className="mb-1 text-sm font-semibold">{module}</h2>{lessons.filter((item) => item.modulo === module).map((item) => <button key={item.id} type="button" disabled={!completed.has(item.id) && item.id !== active?.id} onClick={() => { setReview(completed.has(item.id) ? item.id : null); setShowHistory(false); }} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-xs hover:bg-ink-50 disabled:text-ink-400"><span>{completed.has(item.id) ? <Check className="h-4 w-4 text-income" /> : item.order}</span><span>{item.titulo}{item.id === active?.id && ' · atual'}</span></button>)}</section>)}</div></Dialog>}
   </Layout>;
 }
 
-function LessonCard({ lesson, index, done, ready, onComplete, onReview }: { lesson: Lesson; index: number; done: boolean; ready: boolean; onComplete: (answer: number) => void; onReview: (answer: number) => void }) {
-  const [answer, setAnswer] = useState<number | null>(null);
+function TrailHeading({ profileName, completedCount, onShowHistory }: { profileName: string; completedCount: number; onShowHistory: () => void }) {
+  return <div className="flex items-center justify-between gap-2"><div className="min-w-0"><h1 className="text-lg font-semibold text-ink-900">Trilha de Aprendizado</h1><p className="mt-1 text-xs text-violet-700">{profileName}</p></div><button type="button" onClick={onShowHistory} aria-label="Ver módulos e etapas" className="flex h-11 shrink-0 items-center justify-center gap-1 px-2 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100"><span className="text-xs font-semibold">{completedCount}/30</span><ChevronDown className="h-4 w-4" /></button></div>;
+}
+
+function LessonCard({ lesson, done, onFinished, profileName, completedCount, onShowHistory, message, legacy }: { lesson: Lesson; done: boolean; onFinished: (text: string) => void; profileName: string; completedCount: number; onShowHistory: () => void; message: string; legacy: number }) {
+  const state = useStore();
+  const [reviewAnswer, setReviewAnswer] = useState<number | null>(null);
+  const answer = done ? reviewAnswer : state.lessonAnswers?.[lesson.id] ?? null;
   const correct = answer === lesson.question?.correct;
-  const task = lesson.desafioPratico;
-  return <motion.section initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="learn-card flex max-h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card"><div className="shrink-0 border-b border-violet-100 bg-violet-50 px-4 py-2"><p className="flex items-center gap-1 text-[10px] font-semibold text-violet-700"><BookOpen className="h-3.5 w-3.5" />{done ? 'Revisão' : `Etapa ${index + 1}`} · {lesson.duracao} · +{lesson.xp} XP</p><h2 className="mt-0.5 text-base font-bold text-ink-900">{lesson.titulo}</h2></div><div className="learn-card-body min-h-0 overflow-y-auto p-3"><p className="text-xs leading-relaxed text-ink-700">{lesson.conteudo}</p><div className="mt-2 rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2"><p className="text-[11px] font-bold text-violet-700">Atividade no app</p><p className="mt-0.5 text-xs leading-snug text-ink-700">{task?.descricao}</p>{task && task.rota !== '/aprender' && <Link to={task.rota} className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-violet-700">Fazer atividade<ChevronRight className="h-3 w-3" /></Link>}{!ready && <p className="flex items-center gap-1 text-[10px] text-ink-500"><LockKeyhole className="h-3 w-3" />Conclua a atividade para avançar.</p>}</div>{lesson.question && <fieldset className="mt-3"><legend className="mb-2 text-xs font-semibold">{lesson.question.text}</legend><div className="grid gap-1.5">{lesson.question.options.map((option, optionIndex) => <button type="button" key={option} aria-pressed={answer === optionIndex} onClick={() => setAnswer(optionIndex)} className={`min-h-10 rounded-xl border px-3 py-1.5 text-left text-xs ${answer === optionIndex ? 'border-primary-500 bg-primary-50 text-primary-800' : 'border-ink-200'}`}>{option}</button>)}</div>{answer !== null && <p role="status" className="mt-2 text-[11px] text-ink-600">{correct ? lesson.question.explanation : `Tente de novo. ${lesson.question.explanation}`}</p>}</fieldset>}</div><div className="shrink-0 border-t border-ink-100 bg-white p-3">{done ? <button type="button" disabled={!correct} onClick={() => onReview(answer!)} className="btn-secondary w-full text-xs">Registrar revisão</button> : <button type="button" disabled={!ready || !correct} onClick={() => onComplete(answer!)} className="btn-primary w-full text-sm"><Sparkles className="h-4 w-4" />Concluir etapa</button>}</div></motion.section>;
+  const ready = canCompleteLesson(lesson.id, state);
+  const progress = lessonPracticeProgress(lesson, state);
+  return <section className="learn-card flex max-h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
+    <header className="shrink-0 border-b border-violet-100 bg-white px-4 py-3"><TrailHeading profileName={profileName} completedCount={completedCount} onShowHistory={onShowHistory} /><p className="mt-3 flex items-center gap-1 text-xs font-semibold text-violet-700"><BookOpen className="h-4 w-4" />{done ? 'Revisão' : `Etapa ${lesson.order} de 30`} · {lesson.duracao} · +{lesson.xp} XP</p><p className="mt-1 text-[11px] text-ink-600">Módulo {Math.ceil((lesson.order ?? 1) / 5)} · {lesson.modulo}</p><h2 className="mt-1 text-base font-bold">{lesson.titulo}</h2></header>
+    <div className="learn-card-body min-h-0 overflow-y-auto p-4">{message && <p role="status" className="mb-3 text-xs text-violet-700">{message}</p>}{legacy > 0 && completedCount === 0 && <p className="mb-3 text-xs text-ink-600">Nova trilha com 30 etapas para seu perfil. Seu XP e as {legacy} etapas anteriores foram preservados.</p>}<p className="text-sm leading-relaxed text-ink-700">{lesson.conteudo}</p>
+      {lesson.question && <fieldset className="mt-4"><legend className="mb-2 text-sm font-semibold">{lesson.question.text}</legend><div className="grid gap-2">{lesson.question.options.map((option, index) => <button type="button" key={option} aria-pressed={answer === index} onClick={() => { if (done) setReviewAnswer(index); else state.answerLesson(lesson.id, index); }} className={`min-h-11 rounded-xl border px-3 py-2 text-left text-sm ${answer === index ? 'border-primary-500 bg-primary-50 text-primary-800' : 'border-ink-200'}`}>{option}</button>)}</div>{answer !== null && <p role="status" className={`mt-2 text-xs leading-relaxed ${correct ? 'text-income' : 'text-ink-700'}`}>{correct ? 'Isso! ' : 'Tente novamente. '}{lesson.question.explanation}</p>}</fieldset>}
+      {correct && !done && <section className="mt-4 rounded-xl border border-violet-100 bg-violet-50/60 p-3" aria-label="Atividade prática"><h3 className="text-sm font-semibold text-violet-700">Agora faça no APP</h3><p className="mt-1 text-xs leading-relaxed text-ink-700">{lesson.desafioPratico?.descricao}</p><ul className="mt-2 space-y-1">{progress.map((item, index) => <li key={index}><Link to={item.route} className="flex min-h-11 items-center gap-2 rounded-lg bg-white p-2 text-xs text-primary-700">{item.current >= item.target ? <Check className="h-4 w-4 shrink-0 text-income" /> : <span className="shrink-0 text-ink-500">{item.current}/{item.target}</span>}<span className="flex-1">{item.label}</span><ChevronRight className="h-4 w-4 shrink-0" /></Link></li>)}</ul><p role="status" className="mt-2 text-xs text-ink-600">{ready ? 'Atividade verificada. Você já pode concluir.' : 'A prática é verificada automaticamente. Depois, volte à trilha.'}</p></section>}
+    </div>
+    <div className="shrink-0 border-t border-ink-100 bg-white p-3"><button type="button" disabled={!correct || !done && !ready} onClick={() => {
+      if (done) { state.reviewLesson(lesson.id, answer!); onFinished('Revisão registrada, sem repetir o XP da etapa.'); return; }
+      state.completeLesson(lesson.id, answer!);
+      if (useStore.getState().lessonProgress.some((item) => item.lessonId === lesson.id && item.concluido)) onFinished(`Prática concluída! +${lesson.xp} XP. ${lesson.order === 30 ? 'Sua trilha está completa.' : 'Próxima etapa liberada.'}`);
+    }} className="btn-primary w-full text-sm"><Sparkles className="h-4 w-4" />{done ? 'Registrar revisão' : 'Concluir etapa'}</button>{!done && !correct && <p className="mt-1 text-center text-xs text-ink-500">Responda à pergunta para abrir a prática.</p>}</div>
+  </section>;
 }

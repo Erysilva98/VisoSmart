@@ -9,7 +9,8 @@ async function moduleUrl(path, replacements = {}) {
   return `data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`;
 }
 const categories = await moduleUrl('../src/data/categories.ts');
-const { getTransactionView, parseMonthKey } = await import(await moduleUrl('../src/lib/transactionView.ts', { '@/data/categories': categories }));
+const dateRangeUrl = await moduleUrl('../src/lib/dateRange.ts');
+const { getTransactionView, parseMonthKey } = await import(await moduleUrl('../src/lib/transactionView.ts', { '@/data/categories': categories, './dateRange': dateRangeUrl }));
 const tx = (id, data, tipo, categoria, valor, descricao) => ({ id, data, tipo, categoria, valor, descricao });
 const records = [
   tx('income', '2026-09-01', 'receita', 'salario', 1000),

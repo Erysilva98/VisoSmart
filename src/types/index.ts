@@ -108,6 +108,11 @@ export interface Investment {
 }
 
 export interface Challenge {
+  started?: boolean;
+  requirements?: ActivityRequirement[];
+  theme?: string;
+  templateId?: string;
+  contextCategory?: CategoryId;
   id: string;
   titulo: string;
   descricao: string;
@@ -153,7 +158,36 @@ export interface JourneyPreferences {
 }
 export type LearningAction = 'filter' | 'calendar' | 'budget' | 'goal' | 'expenseCategories' | 'incomeCategories' | 'chart' | 'profile';
 
+export type PracticeAction = LearningAction | 'home' | 'statement' | 'search' | 'categoryFilter' | 'typeFilter'
+  | 'inspectExpense' | 'combinedFilter'
+  | 'month' | 'record' | 'income' | 'expense' | 'edit' | 'inspectRecord' | 'undo'
+  | 'viewLimits' | 'inspectLimit' | 'saveLimit' | 'updateLimit' | 'viewGoals' | 'inspectGoal'
+  | 'createGoal' | 'contribution' | 'planContribution' | 'saveCategories' | 'editCategory'
+  | 'manageIncome' | 'manageExpense' | 'exportReport' | 'dataHelp' | 'privacy' | 'lesson';
+export interface PracticeEvent {
+  sequence: number;
+  action: PracticeAction;
+  at: string;
+  month: string;
+  entity?: string;
+}
+/** Each requirement accepts one of its actions; a lesson requires every requirement. */
+export interface ActivityRequirement {
+  actions: PracticeAction[];
+  label: string;
+  route: string;
+  count?: number;
+  distinct?: boolean;
+  entity?: string;
+  sameMonth?: boolean;
+  group?: string;
+}
+
 export interface AppState {
+  practiceEvents?: PracticeEvent[];
+  practiceSequence?: number;
+  lessonStarts?: Record<string, number>;
+  lessonAnswers?: Record<string, number>;
   categoryDefinitions?: CategoryDefinition[];
   lessonReviews?: Record<string, string>;
   preferences?: JourneyPreferences;
@@ -176,4 +210,4 @@ export interface AppState {
   disabledCards: string[];
 }
 
-export interface CategoryDefinition { id: CategoryId; nome: string; icon: string; cor: string; tipo: TransactionType | "ambos" | "objetivo"; }
+export interface CategoryDefinition { id: CategoryId; nome: string; icon: string; cor: string; tipo: TransactionType | "ambos" | "objetivo"; deleted?: boolean; }

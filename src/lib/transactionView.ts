@@ -1,5 +1,6 @@
 ﻿import type { CategoryId, Transaction, TransactionType } from '@/types';
 import { CATEGORIES } from '@/data/categories';
+import { localDayKey, parseDateRange, type DateRange } from './dateRange';
 
 export function parseMonthKey(value: string | null | undefined, fallback = new Date()): Date {
   if (value && /^\d{4}-(0[1-9]|1[0-2])$/.test(value)) {
@@ -15,6 +16,7 @@ function normalizeSearch(value: string): string {
 
 export interface TransactionFilters {
   month: Date;
+  dateRange?: DateRange | null;
   type?: TransactionType | 'all';
   category?: CategoryId | null;
   search?: string;
@@ -23,7 +25,8 @@ export interface TransactionFilters {
 /** A lista e os totais usam exatamente o mesmo conjunto de registros. */
 export function getTransactionView(transactions: Transaction[], filters: TransactionFilters) {
   const query = normalizeSearch(filters.search ?? '');
-  const hasFilters = Boolean((filters.type && filters.type !== 'all') || filters.category || query);
+  const range = parseDateRange(filters.dateRange?.from, filters.dateRange?.to);
+  const hasFilters = Boolean(range || (filters.type && filters.type !== 'all') || filters.category || query);
   const monthStart = new Date(filters.month.getFullYear(), filters.month.getMonth(), 1);
   const localDate = (value: string) => new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
   // O dinheiro disponível no fim de um mês abre o seguinte, inclusive reservas e saques de metas.
@@ -37,7 +40,10 @@ export function getTransactionView(transactions: Transaction[], filters: Transac
   const items = transactions.filter((item) => {
     // Datas sem horário representam o dia local, não meia-noite UTC.
     const date = localDate(item.data);
-    if (date.getFullYear() !== filters.month.getFullYear() || date.getMonth() !== filters.month.getMonth()) return false;
+    if (range) {
+      const day = localDayKey(date);
+      if (!Number.isFinite(date.getTime()) || day < range.from || day > range.to) return false;
+    } else if (date.getFullYear() !== filters.month.getFullYear() || date.getMonth() !== filters.month.getMonth()) return false;
     if (filters.type && filters.type !== 'all' && item.tipo !== filters.type) return false;
     if (filters.category && item.categoria !== filters.category) return false;
     return !query || normalizeSearch(item.descricao ?? '').includes(query) || normalizeSearch(CATEGORIES[item.categoria].nome).includes(query);

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { categoryOrder } from '@/lib/personalization';
 import { useEffect, useId, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, ArrowLeft, ChevronRight, Clock3, Zap } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { X, Check, ArrowLeft, CalendarDays, ChevronRight, Clock3, Zap } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useStore } from '@/store/useStore';
 import { showNotice } from '@/lib/uiNotice';
@@ -10,6 +10,8 @@ import { CATEGORIES } from '@/data/categories';
 import type { CategoryId, Transaction, TransactionType } from '@/types';
 import { formatCurrency } from '@/lib/format';
 import { parseAmount } from '@/lib/money';
+import { DateRangePicker } from './DateRangePicker';
+import { parseDay } from '@/lib/dateRange';
 
 interface QuickAddModalProps {
   open: boolean;
@@ -17,13 +19,17 @@ interface QuickAddModalProps {
   onClose: () => void;
 }
 
-const QUICK_VALUES = [5, 10, 20, 50];
+const QUICK_VALUES: Record<TransactionType, number[]> = {
+  despesa: [5, 15, 50, 100],
+  receita: [20, 50, 100, 200],
+};
 
 export function QuickAddModal({ open, onClose, initialDate }: QuickAddModalProps) {
   return <AnimatePresence>{open && <QuickAddForm initialDate={initialDate} key="quick-add" onClose={onClose} />}</AnimatePresence>;
 }
 
 function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose: () => void }) {
+  const reduceMotion = useReducedMotion();
   const recordLearningAction = useStore((s) => s.recordLearningAction);
   const addTransaction = useStore((s) => s.addTransaction);
   const transactions = useStore((s) => s.transactions);
@@ -35,6 +41,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
   const [showDescription, setShowDescription] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showDateHelp, setShowDateHelp] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const savingRef = useRef(false);
@@ -45,7 +52,8 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
   const amount = parseAmount(valor);
   const today = new Date();
   const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const validDate = !initialDate || (/^\d{4}-\d{2}-\d{2}$/.test(initialDate) && initialDate <= localToday);
+  const [registrationDate, setRegistrationDate] = useState(initialDate ?? localToday);
+  const validDate = Boolean(parseDay(registrationDate)) && registrationDate <= localToday;
   const validAmount = Number.isFinite(amount) && amount > 0;
   const cats = categoryOrder(tipo, preferences);
 
@@ -76,10 +84,11 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
   useEffect(() => {
     dialogRef.current?.focus();
     dialogRef.current?.querySelector('[data-scroll-content]')?.scrollTo(0, 0);
-  }, [step]);
+  }, [step, showCalendar]);
 
   function selectCategory(category: CategoryId) {
     recordLearningAction(tipo === 'despesa' ? 'expenseCategories' : 'incomeCategories');
+    useStore.getState().recordPractice(tipo === 'despesa' ? 'expenseCategories' : 'incomeCategories', category);
     setCategoria(category);
     setStep('valor');
   }
@@ -112,14 +121,14 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
       tipo,
       valor: Math.round(amount * 100) / 100,
       categoria,
-      data: `${initialDate ?? localToday}T12:00:00`,
+      data: `${registrationDate}T12:00:00`,
       descricao: descricao.trim() || undefined,
     });
     onClose();
     showNotice({
       message: `${tipo === 'receita' ? 'Entrada' : 'Despesa'} de ${formatCurrency(amount)} em ${CATEGORIES[categoria].nome} registrada.`,
       actionLabel: 'Desfazer',
-      onAction: () => useStore.getState().deleteTransaction(transactionId),
+      onAction: () => { const store = useStore.getState(); if (store.transactions.some((item) => item.id === transactionId)) { store.deleteTransaction(transactionId); store.recordPractice('undo', transactionId); } },
     });
   }
 
@@ -136,7 +145,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-xl outline-none"
         onKeyDown={(event) => {
-          if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+          if (event.key === 'Escape') { event.stopPropagation(); if (showCalendar) setShowCalendar(false); else onClose(); }
           if (event.key !== 'Tab') return;
           const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, [tabindex="0"]') ?? []);
           const first = controls[0];
@@ -150,38 +159,39 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
       >
         <header className="flex shrink-0 items-center justify-between border-b border-ink-100 px-4 py-3">
           <div className="flex items-center gap-2">
-            {step === 'valor' && (
-              <button type="button" onClick={() => setStep('categoria')} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-600 hover:bg-ink-50" aria-label="Voltar para categorias">
+            {(step === 'valor' || showCalendar) && (
+              <button type="button" onClick={() => showCalendar ? setShowCalendar(false) : setStep('categoria')} className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-600 hover:bg-ink-50" aria-label={showCalendar ? 'Voltar ao registro' : 'Voltar para categorias'}>
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
             <div>
-              <h2 id={titleId} className="font-bold text-ink-900">Novo registro</h2>
+              <h2 id={titleId} className="font-bold text-ink-900">{showCalendar ? 'Data do registro' : 'Novo registro'}</h2>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-500 hover:bg-ink-50" aria-label="Fechar novo registro">
+          <button type="button" onClick={() => showCalendar ? setShowCalendar(false) : onClose()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-500 hover:bg-ink-50" aria-label={showCalendar ? 'Fechar calendário' : 'Fechar novo registro'}>
             <X className="h-5 w-5" />
           </button>
         </header>
 
-        <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
+        {showCalendar ? <div className="min-h-0 overflow-y-auto p-4"><DateRangePicker embedded dayOnly maxDate={localToday} month={parseDay(registrationDate) ?? new Date()} value={validDate ? { from: registrationDate, to: registrationDate } : null} onClose={() => setShowCalendar(false)} onApply={(range) => { if (range) setRegistrationDate(range.from); setShowCalendar(false); }} /></div> : <form onSubmit={handleSave} className="flex min-h-0 flex-1 flex-col">
           <div data-scroll-content className="min-h-0 overflow-y-auto p-4 space-y-4">
             <div className="rounded-xl bg-primary-50 px-3 py-1.5">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-primary-700">Data do registro: {(initialDate ?? localToday).split('-').reverse().join('/')}</p>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2"><span className="text-xs font-semibold text-primary-700">Data do registro</span><button type="button" onClick={() => setShowCalendar(true)} aria-label={`Alterar data do registro: ${registrationDate.split('-').reverse().join('/')}`} className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary-200 bg-white px-3 text-xs font-bold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 active:bg-primary-100"><CalendarDays className="h-4 w-4 shrink-0" /><span>{registrationDate.split('-').reverse().join('/')}</span></button></div>
                 <button type="button" onClick={() => setShowDateHelp((value) => !value)} aria-label="Informações sobre a data do registro" aria-expanded={showDateHelp} aria-controls={dateHelpId} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold hover:bg-white/70 ${validDate ? 'text-primary-700' : 'text-expense'}`}>?</button>
               </div>
-              <p id={dateHelpId} hidden={!showDateHelp} role={validDate ? undefined : 'alert'} className={`mt-1 pb-1 text-xs leading-relaxed ${validDate ? 'text-ink-600' : 'text-expense'}`}>Registre apenas dinheiro recebido ou gastos já realizados. Escolha hoje ou uma data anterior no calendário.</p>
+              <p id={dateHelpId} hidden={!showDateHelp && validDate} role={validDate ? undefined : 'alert'} className={`mt-1 pb-1 text-xs leading-relaxed ${validDate ? 'text-ink-600' : 'text-expense'}`}>{validDate ? 'Registre apenas dinheiro recebido ou gastos já realizados. Escolha hoje ou uma data anterior no calendário.' : 'Selecione uma data válida: hoje ou um dia anterior.'}</p>
             </div>
-            <div className="flex rounded-xl bg-ink-100 p-1" aria-label="Tipo de transação">
+            <div className="flex gap-1 rounded-xl bg-ink-100 p-1" aria-label="Tipo de transação">
               {(['despesa', 'receita'] as const).map((type) => (
                 <button key={type} type="button" aria-pressed={tipo === type} onClick={() => changeType(type)}
-                  className={`min-h-11 flex-1 rounded-lg text-sm font-semibold transition-colors ${tipo === type ? (type === 'receita' ? 'bg-white text-income shadow-sm' : 'bg-white text-expense shadow-sm') : 'text-ink-500 hover:text-ink-900'}`}>
+                  className={`min-h-11 flex-1 rounded-lg text-sm font-bold transition-colors duration-150 ease-out motion-reduce:transition-none ${tipo === type ? (type === 'receita' ? 'bg-income text-white shadow-sm' : 'bg-expense text-white shadow-sm') : (type === 'receita' ? 'bg-white text-income hover:bg-green-50' : 'bg-white text-expense hover:bg-red-50')}`}>
                   {type === 'despesa' ? 'Despesa' : 'Entrada'}
                 </button>
               ))}
             </div>
 
+            <motion.div key={tipo} initial={reduceMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.15, ease: 'easeOut' }} className="space-y-4">
             {step === 'categoria' ? (
               <section aria-label="Categorias">
                 <h3 className="mb-2 text-sm font-semibold text-ink-700">{preferences ? 'Minhas categorias' : 'Escolha a categoria'}</h3>
@@ -219,7 +229,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
                 <section aria-label="Valores rápidos">
                   <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-500"><Zap className="h-3.5 w-3.5" aria-hidden="true" />Valores rápidos</h3>
                   <div className="grid grid-cols-4 gap-2">
-                    {QUICK_VALUES.map((value) => (
+                    {QUICK_VALUES[tipo].map((value) => (
                       <button key={value} type="button" aria-pressed={amount === value} onClick={() => setValor(value.toFixed(2).replace('.', ','))}
                         className={`min-h-11 rounded-xl border text-sm font-semibold transition-colors ${amount === value ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-ink-200 text-ink-700 hover:border-primary-300 hover:bg-primary-50'}`}>
                         R$ {value}
@@ -257,6 +267,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
                 </div>
               ) : <button type="button" onClick={() => setShowDescription(true)} className="min-h-11 text-xs font-semibold text-ink-500 hover:text-primary-700">+ Adicionar descrição (opcional)</button>
             )}
+            </motion.div>
           </div>
           {step === 'valor' && (
             <footer className="shrink-0 border-t border-ink-100 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -266,7 +277,7 @@ function QuickAddForm({ onClose, initialDate }: { initialDate?: string; onClose:
               </button>
             </footer>
           )}
-        </form>
+        </form>}
       </motion.div>
     </motion.div>
   );

@@ -54,7 +54,7 @@ body {
     @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-r from-violet-700 to-primary-700 text-white px-5 py-3 shadow-[0_6px_18px_-9px_rgba(79,109,255,0.75)] hover:from-violet-700 hover:to-primary-800;
+    @apply btn bg-gradient-to-r from-primary-600 to-primary-500 text-white px-5 py-3 shadow-[0_6px_18px_-9px_rgba(79,109,255,0.75)] hover:from-primary-700 hover:to-primary-600;
   }
   .btn-secondary {
     @apply btn border border-primary-200 bg-white text-primary-800 hover:border-primary-400 hover:bg-primary-50 px-5 py-3;
@@ -196,7 +196,7 @@ body {
   .calendar-compact .calendar-day > div:first-of-type svg { width: 11px; height: 11px; }
   .calendar-compact .calendar-day > span:last-child { position: absolute; bottom: 0; }
   .donut-compact svg { max-width: 96px; }
-  .donut-compact button span:last-child span:last-child { display: none; }
+  .donut-compact .category-amount { display: none; }
   .home-categories { padding-bottom: 4px; }
   .home-main:has(.home-interactive) { min-height: calc(100dvh - 137px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); align-content: start; gap: 8px; overflow: visible; padding-top: 8px; padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
   .home-main:has(.home-interactive) .calendar-compact .calendar-day { height: 28px; }
@@ -205,7 +205,6 @@ body {
   .home-main:has(.home-interactive) .donut-compact { grid-template-columns: 56px minmax(0, 1fr); gap: 8px; padding-right: 60px; }
   .home-main:has(.home-interactive) .donut-compact svg { max-width: 56px; }
   .home-main:has(.home-interactive) .donut-compact button { min-height: 22px; padding-top: 0; padding-bottom: 0; }
-  .home-main:has(.home-interactive) .home-categories header button { margin-right: 60px; }
   .home-main:has(.home-interactive) > details { display: none; }
   .home-main:has(.calendar-compact > div[aria-live="polite"]) { height: auto; min-height: calc(100dvh - 137px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow: visible; padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
   .learn-main { height: calc(100dvh - 144px - env(safe-area-inset-bottom)); overflow: hidden; padding-top: 7px; padding-bottom: 5px; }
@@ -236,12 +235,10 @@ body {
   .home-main:has(.home-interactive) .home-interactive > nav button { min-height: 48px; gap: 2px; }
   .home-main:has(.home-interactive) .home-interactive > nav button > span:first-child { width: 28px; height: 28px; }
   .home-main:has(.home-interactive) .home-interactive > button { min-height: 80px; padding-top: 10px; padding-bottom: 10px; }
-  .home-main:has(.home-interactive) .home-categories .donut-compact button:nth-of-type(n+3) { display: none; }
 }
 
 @media (max-width: 767px) and (max-height: 880px) {
   .home-main:has(.home-interactive) .calendar-compact .calendar-day { height: 24px; }
-  .home-main:has(.home-interactive):has(.calendar-compact[data-weeks="6"]) { height: auto; min-height: calc(100dvh - 137px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow: visible; padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 767px) and (max-height: 760px) {
@@ -262,13 +259,13 @@ body {
   .home-main:has(.home-interactive) .home-interactive > button { min-height: 72px; padding-top: 8px; padding-bottom: 8px; }
 }
 
-/* NYX: superfícies leves, títulos Sora e ações em índigo/roxo. */
+/* Viso Smart: superfícies leves, títulos Sora e ações em índigo/roxo. */
 @layer base {
   body { letter-spacing: -0.015em; }
   h1, h2, h3 { font-family: Sora, Inter, system-ui, sans-serif; letter-spacing: -0.035em; }
   button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
   button:focus-visible, a:focus-visible, summary:focus-visible {
-    outline: 3px solid #4F6DFF;
+    outline: 3px solid #426BFF;
     outline-offset: 4px;
   }
 }
@@ -289,7 +286,7 @@ body {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
-/* Traços arredondados do sistema de ícones NYX. */
+/* Traços arredondados do sistema de ícones Viso Smart. */
 .lucide { stroke-width: 2; }
 
 /* Uma superfície clara por bloco deixa o saldo e a trilha em destaque. */
@@ -306,4 +303,177 @@ body {
 @keyframes learn-invite {
   0%, 100% { transform: translateY(0) scale(1); }
   45% { transform: translateY(-3px) scale(1.12); box-shadow: 0 0 0 5px rgba(79, 109, 255, 0.1); }
+}
+
+/* Distribui a altura disponível sem empurrar categorias para baixo do menu. */
+@media (max-width: 767px) {
+  .home-main:has(.home-interactive) {
+    height: calc(100dvh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+  .home-main:has(.home-interactive) .calendar-compact {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+  .home-main:has(.home-interactive) .calendar-compact > .grid {
+    flex: 1;
+    min-height: 0;
+    grid-auto-rows: minmax(22px, 1fr);
+    overflow-y: auto;
+  }
+  .home-main:has(.home-interactive) .calendar-compact .calendar-day {
+    height: auto;
+    min-height: 0;
+  }
+  .home-main:has(.home-interactive) .home-categories {
+    min-height: clamp(108px, 15dvh, 132px);
+    padding-top: clamp(4px, 1dvh, 10px);
+    padding-bottom: clamp(6px, 1dvh, 10px);
+  }
+  .home-main:has(.home-interactive) .donut-compact {
+    grid-template-columns: clamp(56px, 8dvh, 68px) minmax(0, 1fr);
+  }
+  .home-main:has(.home-interactive) .donut-compact > svg { max-width: 68px; }
+}
+
+@media (max-width: 767px) and (max-height: 660px) {
+  .home-shell:has(.home-interactive) > header > div { height: 52px; }
+  .home-main:has(.home-interactive) { height: calc(100dvh - 118px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .home-main:has(.home-interactive) .home-month button { height: 30px; }
+  .home-main:has(.home-interactive) .home-interactive > section .h-11 { height: 28px; }
+  .home-main:has(.home-interactive) .home-interactive > section .min-h-14 { min-height: 40px; }
+  .home-main:has(.home-interactive) .home-interactive > section .min-h-11 { min-height: 34px; }
+  .home-main:has(.home-interactive) [data-month-balance] { font-size: 26px; }
+  .home-main:has(.home-interactive) .home-interactive > button { min-height: 60px; padding-top: 3px; padding-bottom: 3px; }
+  .home-main:has(.home-interactive) .home-interactive > button .text-sm { font-size: 12px; line-height: 16px; }
+  .home-main:has(.home-interactive) .home-categories { min-height: 100px; padding-top: 3px; padding-bottom: 3px; }
+  .home-main:has(.home-interactive) .calendar-compact .calendar-day > div { display: none; }
+}
+
+@media (max-width: 767px) and (max-height: 740px) {
+  .home-main:has(.home-interactive) .home-interactive > section { padding-top: 5px; padding-bottom: 5px; }
+  .home-main:has(.home-interactive) .home-interactive > section > .mt-3 { margin-top: 4px; }
+  .home-main:has(.home-interactive) .home-interactive > section > .mt-1\.5 { margin-top: 0; min-height: 28px; }
+  .home-main:has(.home-interactive) .home-interactive > button { min-height: 68px; padding-top: 5px; padding-bottom: 5px; }
+  .home-main:has(.home-interactive) .calendar-compact { padding-top: 2px; padding-bottom: 2px; }
+  .home-main:has(.home-interactive) .calendar-compact header button { min-height: 28px; }
+  .home-main:has(.home-interactive) .calendar-compact > p { font-size: 9px; line-height: 12px; }
+  .home-main:has(.home-interactive) .home-categories header button { min-height: 32px; }
+}
+
+/* Os dois painéis dividem uma área fixa; a expansão cobre o painel vizinho. */
+.home-insights { position: relative; display: grid; gap: 6px; min-height: 0; }
+.home-calendar-slot, .home-categories-slot { min-height: 0; }
+.home-insights[data-expanded="calendar"] .home-categories-slot { visibility: hidden; }
+.home-insights [data-expanded="true"] {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 28px -10px rgb(9 20 51 / 25%);
+}
+.home-insights [data-expanded="true"] > header { flex-shrink: 0; }
+.home-insights .home-category-chart { min-height: 0; }
+.home-insights .home-categories[data-expanded="true"] .home-category-chart { flex: 1; overflow-y: auto; }
+.home-insights .home-categories[data-expanded="true"] .donut-compact { align-items: start; padding-top: 6px; }
+.home-insights .home-categories[data-expanded="true"] .category-legend > button { min-height: 32px; }
+
+.profile-missions-toggle { display: none; }
+@media (max-width: 767px) and (max-height: 780px) {
+  .profile-missions-toggle { display: flex; }
+  .profile-missions-anchor { position: relative; }
+  .profile-missions:not([data-expanded="true"]) .profile-mission-list > article:not(:first-child) { display: none; }
+  .profile-missions[data-expanded="true"] .profile-mission-list {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 35;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 16px;
+    background: #F4F7FB;
+    padding: 4px;
+    box-shadow: 0 12px 30px -8px rgb(9 20 51 / 28%);
+  }
+}
+
+@media (max-width: 767px) {
+  .home-main:has(.home-interactive) { grid-template-rows: auto auto minmax(0, 1fr); }
+  .home-main:has(.home-interactive) .home-insights { grid-template-rows: minmax(0, 1fr) auto; }
+  .home-main:has(.home-interactive) .home-categories-slot { min-height: clamp(108px, 15dvh, 132px); }
+  .home-main:has(.home-interactive) .calendar-compact { height: 100%; }
+  .home-main:has(.home-interactive) .calendar-compact[data-expanded="true"] { height: auto; }
+  .home-main:has(.home-interactive) .calendar-compact[data-week-only="true"] > .grid { grid-template-rows: 20px minmax(26px, 1fr); grid-auto-rows: auto; overflow: visible; }
+  .home-main:has(.home-interactive) .calendar-compact[data-expanded="true"] > .grid { grid-template-rows: 20px; grid-auto-rows: minmax(20px, 1fr); overflow-y: auto; }
+  .home-main:has(.home-interactive) .calendar-compact[data-expanded="true"] .calendar-day > div { display: none; }
+  .home-main:has(.home-interactive) .home-insights header button { min-height: 32px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .category-legend > button { min-height: 32px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .donut-compact { padding-right: 0; }
+}
+@media (max-width: 767px) and (max-height: 660px) {
+  .home-main:has(.home-interactive) .home-categories-slot { min-height: 100px; }
+}
+
+/* A expansão libera a altura do card inteiro, sem rolagem interna. */
+.home-insights .home-categories[data-expanded="true"] { position: relative; inset: auto; height: auto; max-height: none; }
+.home-insights .home-categories[data-expanded="true"] .home-category-chart { overflow: visible; }
+.home-insights .home-categories[data-expanded="true"] .donut-compact { height: auto; min-height: 0; align-items: center; }
+.home-insights .home-categories[data-expanded="true"] .category-legend { height: auto; overflow: visible; }
+@media (max-width: 767px) {
+  .home-main:has(.home-interactive):has(.home-insights[data-expanded="categories"]) { height: auto; min-height: calc(100dvh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); grid-template-rows: auto auto auto; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] { grid-template-rows: auto auto; }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] .calendar-compact { height: auto; }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] .calendar-compact .calendar-day { min-height: 26px; }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] .home-categories-slot { height: auto; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] { min-height: 0; padding-top: 4px; padding-bottom: 12px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .donut-compact { padding-right: 60px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .category-legend > button { min-height: 32px; }
+}
+
+/* Cabeçalhos permanecem fixos; só registros e metas usam a altura restante. */
+.list-page-shell { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+.list-page-shell > header { flex-shrink: 0; }
+.list-page-body { flex: 1; min-height: 0; padding-bottom: calc(65px + env(safe-area-inset-bottom)); }
+.list-page-main { display: flex; height: 100%; min-height: 0; flex-direction: column; overflow: hidden; padding-bottom: 8px !important; }
+.list-page-main > * { flex-shrink: 0; }
+.list-page-main > .page-records-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; contain: layout paint; }
+.page-records-scroll { padding-bottom: 72px; scroll-padding-block: 8px 72px; }
+.scrollbar-hidden { scrollbar-width: none; }
+.scrollbar-hidden::-webkit-scrollbar { display: none; }
+@media (min-width: 768px) and (max-width: 1023px) {
+  .home-main:has(.home-interactive) { gap: 8px; padding-top: 12px; padding-bottom: 16px; }
+  .home-main .calendar-compact .calendar-day { min-height: 32px; }
+  .home-main .calendar-compact .calendar-day > div:first-of-type > span:first-child { width: 22px; height: 22px; }
+  .home-main .calendar-compact .calendar-day > div:first-of-type svg { width: 12px; height: 12px; }
+}
+.profile-page-main { padding-bottom: calc(73px + env(safe-area-inset-bottom)) !important; }
+.profile-page-shell { overscroll-behavior-y: none; }
+body:has(.profile-page-shell), body:has(.list-page-shell) { overscroll-behavior-y: none; }
+@media (min-width: 768px) {
+  .list-page-body { padding-bottom: 0; }
+  .profile-page-main { padding-bottom: 16px !important; }
+}
+@media (max-width: 767px) {
+  .profile-page-main > .mb-3 { margin-bottom: 6px; }
+  .profile-page-main > .mt-3 { margin-top: 6px; }
+  .profile-page-main > footer { margin-top: 8px; padding-bottom: 0; }
+}
+@media (max-width: 767px) and (max-height: 700px) {
+  .profile-page-shell > header > div { height: 52px; }
+  .profile-page-main { padding-top: 6px; }
+  .profile-page-main .profile-missions > header h2 { font-size: 16px; line-height: 22px; }
+  .profile-page-main .profile-missions > p { margin-bottom: 4px; }
+}
+@media (max-width: 767px) and (max-height: 600px) {
+  .profile-page-main > .mb-3 { margin-bottom: 3px; }
+  .profile-page-main > .mt-3 { margin-top: 3px; }
+  .profile-page-main > footer { margin-top: 4px; font-size: 9px; line-height: 12px; }
+  .profile-page-main > [aria-label="Preferências do perfil"] > * { min-height: 44px; }
+  .profile-page-main .profile-missions > header h2 { font-size: 14px; line-height: 20px; }
 }
