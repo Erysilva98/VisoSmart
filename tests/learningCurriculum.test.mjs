@@ -17,6 +17,26 @@ const month = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).p
 const empty = () => ({ transactions: [], goals: [], budgets: [], lessonProgress: [], practiceEvents: [] });
 const movement = (id, category, value, period = month) => ({ id, tipo: 'despesa', categoria: category, valor: value, data: `${period}-01T12:00:00` });
 
+test('unopened missions count earlier monthly actions and preserve progress when opened', () => {
+  const previous = useStore.getState();
+  try {
+    const mission = { ...monthlyMissions('explorer', month)[0], started: false, requirements: [
+      { actions: ['calendar'], label: 'Consultar dois dias', route: '/dashboard', count: 2, distinct: true },
+    ] };
+    useStore.setState({ onboarding: { completed: true, profile: 'explorer', score: 0 }, challenges: [mission], practiceEvents: [
+      { sequence: 1, action: 'calendar', entity: 'day-1', month, at: `${month}-01T12:00:00` },
+      { sequence: 2, action: 'calendar', entity: 'old-day', month: '2000-01', at: '2000-01-01T12:00:00' },
+    ] });
+    assert.deepEqual(missionProgress(mission, useStore.getState()), { current: 1, target: 2 });
+    useStore.setState({ practiceEvents: [...useStore.getState().practiceEvents, { sequence: 3, action: 'calendar', entity: 'day-2', month, at: `${month}-02T12:00:00` }] });
+    assert.deepEqual(missionProgress(mission, useStore.getState()), { current: 2, target: 2 });
+    useStore.getState().startMission(mission.id);
+    const opened = useStore.getState().challenges[0];
+    assert.deepEqual(opened.requirements, mission.requirements);
+    assert.deepEqual(missionProgress(opened, useStore.getState()), { current: 2, target: 2 });
+  } finally { useStore.setState(previous, true); }
+});
+
 test('removed export and data panels never block lessons or monthly missions', () => {
   const retired = new Set(['exportReport', 'dataHelp', 'privacy']);
   const activities = [...TRAIL_LESSONS, ...profiles.flatMap((profile) => Array.from({ length: 12 }, (_, i) => monthlyMissions(profile, `2026-${String(i + 1).padStart(2, '0')}`)).flat())];

@@ -158,9 +158,7 @@ export const useStore = create<Store>((set, get) => ({
     const s = get();
     const mission = s.challenges.find((item) => item.id === id);
     if (!mission || mission.started || mission.concluido || mission.mes !== getCurrentMonthKey() || mission.perfil !== s.onboarding.profile) return;
-    const contextual = monthlyMissions(mission.perfil, mission.mes, s.preferences?.focus, s).find((item) => item.id === id);
-    if (!contextual) return;
-    set({ challenges: s.challenges.map((item) => item.id === id ? { ...contextual, started: true } : item) });
+    set({ challenges: s.challenges.map((item) => item.id === id ? { ...item, started: true } : item) });
     get()._persist();
   },
   recordPractice: (action, entity, month = getCurrentMonthKey()) => {

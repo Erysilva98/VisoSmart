@@ -112,7 +112,7 @@ export function monthlyMissions(profile: ProfileType, month: string, _focus: Jou
 export function missionProgress(challenge: Challenge, state: MissionState) {
   if (challenge.requirements) {
     const steps = practiceProgress(challenge.requirements, state, -1, challenge.mes);
-    return { current: challenge.started ? steps.reduce((sum, item) => sum + item.current, 0) : 0, target: steps.reduce((sum, item) => sum + item.target, 0) };
+    return { current: steps.reduce((sum, item) => sum + item.current, 0), target: steps.reduce((sum, item) => sum + item.target, 0) };
   }
   // Compatibility for archived v1 missions; the new generator never issues these again.
   const thisMonth = (date?: string) => date?.slice(0, 7) === challenge.mes;
