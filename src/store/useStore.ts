@@ -1,4 +1,4 @@
-import { syncCategories } from '@/data/categories';
+import { syncCategories, categoryOptions, MAX_CATEGORIES_PER_TYPE } from '@/data/categories';
 import { localDateTime, withInitialBalance } from '@/lib/personalization';
 import { monthlyMissions } from '@/lib/journeyMissions';
 import { create } from 'zustand';
@@ -188,9 +188,12 @@ export const useStore = create<Store>((set, get) => ({
     get()._persist();
   },
   saveCategoryPreferences: (categoryDefinitions, preferences) => {
+    const income = categoryOptions('receita', categoryDefinitions);
+    const expenses = categoryOptions('despesa', categoryDefinitions);
+    if (income.length > MAX_CATEGORIES_PER_TYPE || expenses.length > MAX_CATEGORIES_PER_TYPE) throw new Error('O limite é de 30 categorias para entradas e 30 para despesas.');
     const changed = JSON.stringify(categoryDefinitions) !== JSON.stringify(get().categoryDefinitions ?? []);
     syncCategories(categoryDefinitions);
-    set({ categoryDefinitions, preferences });
+    set({ categoryDefinitions, preferences: { ...preferences, incomeCategories: preferences.incomeCategories.filter((id) => income.includes(id)), expenseCategories: preferences.expenseCategories.filter((id) => expenses.includes(id)) }, budgets: get().budgets.filter((budget) => expenses.includes(budget.categoria)) });
     get().recordPractice('saveCategories');
     if (changed) get().recordPractice('editCategory');
     get()._persist();

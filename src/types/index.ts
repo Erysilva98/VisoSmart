@@ -210,4 +210,4 @@ export interface AppState {
   disabledCards: string[];
 }
 
-export interface CategoryDefinition { id: CategoryId; nome: string; icon: string; cor: string; tipo: TransactionType | "ambos" | "objetivo"; }
+export interface CategoryDefinition { id: CategoryId; nome: string; icon: string; cor: string; tipo: TransactionType | "ambos" | "objetivo"; deleted?: boolean; }

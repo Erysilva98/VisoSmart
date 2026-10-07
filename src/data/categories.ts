@@ -1,6 +1,6 @@
 import type { CategoryId, CategoryDefinition } from '@/types';
 
-export interface CategoryConfig { id: CategoryId; nome: string; icon: string; cor: string; tipo: 'despesa' | 'receita' | 'ambos' | 'objetivo'; legacy?: boolean; }
+export interface CategoryConfig { id: CategoryId; nome: string; icon: string; cor: string; tipo: 'despesa' | 'receita' | 'ambos' | 'objetivo'; legacy?: boolean; deleted?: boolean; }
 
 export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
   saldo_inicial: { id: 'saldo_inicial', nome: 'Saldo inicial', icon: 'Wallet', cor: '#15803d', tipo: 'receita', legacy: true },
@@ -37,6 +37,12 @@ export function getCategory(id: CategoryId): CategoryConfig { return CATEGORIES[
 const DEFAULTS = { ...CATEGORIES };
 const DEFAULT_EXPENSES = [...DESPESA_CATEGORIES];
 const DEFAULT_INCOME = [...RECEITA_CATEGORIES];
+export const MAX_CATEGORIES_PER_TYPE = 30;
+export function categoryOptions(type: 'receita' | 'despesa', definitions: CategoryDefinition[] = []): CategoryId[] {
+  const configs = { ...DEFAULTS };
+  for (const definition of definitions) configs[definition.id] = { ...configs[definition.id], ...definition };
+  return [...new Set([...(type === 'receita' ? DEFAULT_INCOME : DEFAULT_EXPENSES), ...definitions.filter((item) => item.id.startsWith('custom_') && (item.tipo === type || item.tipo === 'ambos')).map((item) => item.id)])].filter((id) => !configs[id]?.deleted);
+}
 /** Stable IDs preserve historical records when names change. */
 export function syncCategories(definitions: CategoryDefinition[] = []) {
   for (const id of Object.keys(CATEGORIES) as CategoryId[]) delete CATEGORIES[id];
@@ -51,4 +57,6 @@ export function syncCategories(definitions: CategoryDefinition[] = []) {
       if (definition.tipo === 'receita') RECEITA_CATEGORIES.push(definition.id);
     }
   }
+  DESPESA_CATEGORIES.splice(0, DESPESA_CATEGORIES.length, ...categoryOptions('despesa', definitions));
+  RECEITA_CATEGORIES.splice(0, RECEITA_CATEGORIES.length, ...categoryOptions('receita', definitions));
 }

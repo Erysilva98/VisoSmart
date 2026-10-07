@@ -368,8 +368,7 @@ body {
 /* Os dois painéis dividem uma área fixa; a expansão cobre o painel vizinho. */
 .home-insights { position: relative; display: grid; gap: 6px; min-height: 0; }
 .home-calendar-slot, .home-categories-slot { min-height: 0; }
-.home-insights[data-expanded="calendar"] .home-categories-slot,
-.home-insights[data-expanded="categories"] .home-calendar-slot { visibility: hidden; }
+.home-insights[data-expanded="calendar"] .home-categories-slot { visibility: hidden; }
 .home-insights [data-expanded="true"] {
   position: absolute;
   inset: 0;
@@ -419,4 +418,20 @@ body {
 }
 @media (max-width: 767px) and (max-height: 660px) {
   .home-main:has(.home-interactive) .home-categories-slot { min-height: 100px; }
+}
+
+/* A expansão libera a altura do card inteiro, sem rolagem interna. */
+.home-insights .home-categories[data-expanded="true"] { position: relative; inset: auto; height: auto; max-height: none; }
+.home-insights .home-categories[data-expanded="true"] .home-category-chart { overflow: visible; }
+.home-insights .home-categories[data-expanded="true"] .donut-compact { height: auto; min-height: 0; align-items: center; }
+.home-insights .home-categories[data-expanded="true"] .category-legend { height: auto; overflow: visible; }
+@media (max-width: 767px) {
+  .home-main:has(.home-interactive):has(.home-insights[data-expanded="categories"]) { height: auto; min-height: calc(100dvh - 138px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); grid-template-rows: auto auto auto; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] { grid-template-rows: auto auto; }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] .calendar-compact { height: auto; }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] .calendar-compact .calendar-day { min-height: 26px; }
+  .home-main:has(.home-interactive) .home-insights[data-expanded="categories"] .home-categories-slot { height: auto; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] { min-height: 0; padding-top: 4px; padding-bottom: 12px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .donut-compact { padding-right: 60px; }
+  .home-main:has(.home-interactive) .home-insights .home-categories[data-expanded="true"] .category-legend > button { min-height: 32px; }
 }
