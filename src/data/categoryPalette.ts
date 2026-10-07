@@ -1,12 +1,12 @@
 /** Brand indigo, violet, sky, and semantic tones, with darker accessible variants. */
 const BASE_CATEGORY_PALETTE = [
-  { name: 'Índigo NYX', value: '#4F6DFF' }, { name: 'Índigo profundo', value: '#4338CA' },
-  { name: 'Índigo intenso', value: '#3949AB' }, { name: 'Azul noturno', value: '#091433' },
-  { name: 'Roxo elétrico', value: '#7A63FE' }, { name: 'Violeta', value: '#7C3AED' },
+  { name: 'Índigo Viso Smart', value: '#426BFF' }, { name: 'Índigo profundo', value: '#4338CA' },
+  { name: 'Índigo intenso', value: '#3949AB' }, { name: 'Azul noturno', value: '#102A5C' },
+  { name: 'Roxo elétrico', value: '#7C6BFF' }, { name: 'Violeta', value: '#7C3AED' },
   { name: 'Ametista', value: '#6D28D9' }, { name: 'Lavanda', value: '#8B7BD8' },
-  { name: 'Azul céu', value: '#56B8FF' }, { name: 'Azul oceano', value: '#0284C7' },
+  { name: 'Azul céu', value: '#6EC5FF' }, { name: 'Azul oceano', value: '#0284C7' },
   { name: 'Azul intenso', value: '#2563EB' }, { name: 'Azul petróleo', value: '#0E7490' },
-  { name: 'Verde entrada', value: '#18B46B' }, { name: 'Esmeralda', value: '#059669' },
+  { name: 'Verde entrada', value: '#19B36B' }, { name: 'Esmeralda', value: '#059669' },
   { name: 'Verde profundo', value: '#047857' }, { name: 'Turquesa', value: '#0D9488' },
   { name: 'Vermelho gasto', value: '#F04D4D' }, { name: 'Coral', value: '#E85D75' },
   { name: 'Framboesa', value: '#DB2777' }, { name: 'Rosa profundo', value: '#9D174D' },

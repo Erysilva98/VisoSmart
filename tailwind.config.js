@@ -4,12 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: { 50: '#F4F1FF', 100: '#EAE4FF', 200: '#D1C7FF', 300: '#AFA1FF', 400: '#748CFF', 500: '#4F6DFF', 600: '#3C53D9', 700: '#3246B8', 800: '#26368C', 900: '#202D7D' },
+        primary: { 50: '#F4F1FF', 100: '#EAE4FF', 200: '#D1C7FF', 300: '#AFA1FF', 400: '#748CFF', 500: '#426BFF', 600: '#3C53D9', 700: '#3246B8', 800: '#26368C', 900: '#202D7D' },
         income: '#0B784B', expense: '#C92E3A',
-        ink: { 50: '#F4F7FB', 100: '#EDF1F7', 200: '#E3E9F2', 300: '#CDD6E5', 400: '#99A6BC', 500: '#67758F', 600: '#4E5E78', 700: '#33435F', 800: '#1B2B4A', 900: '#091433' },
-        success: '#18B46B', warning: '#E5AD27', danger: '#F04D4D',
-        accent: { 50: '#ECF8FF', 100: '#DDF3FF', 200: '#BCE9FF', 300: '#91D8FF', 400: '#6AC5FF', 500: '#56B8FF', 600: '#318FD6', 700: '#206FAF' },
-        violet: { 50: '#F4F0FF', 100: '#EAE2FF', 200: '#D2C2FF', 300: '#B49AFF', 400: '#9574FF', 500: '#7A63FE', 600: '#7A63FE', 700: '#6047DE' },
+        ink: { 50: '#F4F7FB', 100: '#EDF1F7', 200: '#E3E9F2', 300: '#CDD6E5', 400: '#99A6BC', 500: '#67758F', 600: '#4E5E78', 700: '#33435F', 800: '#1B2B4A', 900: '#102A5C' },
+        success: '#19B36B', warning: '#E5AD27', danger: '#F04D4D',
+        accent: { 50: '#ECF8FF', 100: '#DDF3FF', 200: '#BCE9FF', 300: '#91D8FF', 400: '#6AC5FF', 500: '#6EC5FF', 600: '#318FD6', 700: '#206FAF' },
+        violet: { 50: '#F4F0FF', 100: '#EAE2FF', 200: '#D2C2FF', 300: '#B49AFF', 400: '#9574FF', 500: '#7C6BFF', 600: '#7C6BFF', 700: '#6047DE' },
       },
       fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'], display: ['Sora', 'Inter', 'system-ui', 'sans-serif'] },
       borderRadius: { '2xl': '1.25rem', '3xl': '1.25rem' },

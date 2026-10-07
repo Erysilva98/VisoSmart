@@ -12,8 +12,8 @@ import { dateRangeLabel } from '@/lib/dateRange';
 import { parseAmount } from '@/lib/money';
 
 const GOAL_ICONS = [
-  { id: 'Headphones', label: 'Fone', icon: Headphones, color: '#7A63FE' },
-  { id: 'Smartphone', label: 'Celular', icon: Smartphone, color: '#4F6DFF' },
+  { id: 'Headphones', label: 'Fone', icon: Headphones, color: '#7C6BFF' },
+  { id: 'Smartphone', label: 'Celular', icon: Smartphone, color: '#426BFF' },
   { id: 'Plane', label: 'Viagem', icon: Plane, color: '#C25E08' },
   { id: 'Laptop', label: 'Notebook', icon: Laptop, color: '#3C53D9' },
   { id: 'Bike', label: 'Bicicleta', icon: Bike, color: '#15803D' },

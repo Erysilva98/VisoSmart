@@ -54,7 +54,7 @@ body {
     @apply inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-r from-violet-700 to-primary-700 text-white px-5 py-3 shadow-[0_6px_18px_-9px_rgba(79,109,255,0.75)] hover:from-violet-700 hover:to-primary-800;
+    @apply btn bg-gradient-to-r from-primary-600 to-primary-500 text-white px-5 py-3 shadow-[0_6px_18px_-9px_rgba(79,109,255,0.75)] hover:from-primary-700 hover:to-primary-600;
   }
   .btn-secondary {
     @apply btn border border-primary-200 bg-white text-primary-800 hover:border-primary-400 hover:bg-primary-50 px-5 py-3;
@@ -259,13 +259,13 @@ body {
   .home-main:has(.home-interactive) .home-interactive > button { min-height: 72px; padding-top: 8px; padding-bottom: 8px; }
 }
 
-/* NYX: superfícies leves, títulos Sora e ações em índigo/roxo. */
+/* Viso Smart: superfícies leves, títulos Sora e ações em índigo/roxo. */
 @layer base {
   body { letter-spacing: -0.015em; }
   h1, h2, h3 { font-family: Sora, Inter, system-ui, sans-serif; letter-spacing: -0.035em; }
   button, a, input, select, summary { -webkit-tap-highlight-color: transparent; }
   button:focus-visible, a:focus-visible, summary:focus-visible {
-    outline: 3px solid #4F6DFF;
+    outline: 3px solid #426BFF;
     outline-offset: 4px;
   }
 }
@@ -286,7 +286,7 @@ body {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
-/* Traços arredondados do sistema de ícones NYX. */
+/* Traços arredondados do sistema de ícones Viso Smart. */
 .lucide { stroke-width: 2; }
 
 /* Uma superfície clara por bloco deixa o saldo e a trilha em destaque. */

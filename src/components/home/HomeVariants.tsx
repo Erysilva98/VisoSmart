@@ -1,6 +1,6 @@
 import { ArrowDownLeft, ArrowUpRight, BookOpen, ChevronRight, Eye, EyeOff, Plus, Sparkles, Target } from 'lucide-react';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
-import { ProfileMark } from '@/components/journey/NexoMark';
+import { ProfileMark } from '@/components/journey/VisoMark';
 import { CATEGORIES } from '@/data/categories';
 import { PROFILES } from '@/data/profiles';
 import { formatCurrency, formatDate } from '@/lib/format';
@@ -98,7 +98,7 @@ export function HomeVariantContent(props: HomeVariantProps) {
       <StateMessage props={props} /><NextStep props={props} />
     </>}
     {props.variant === 2 && <>
-      <section aria-label="Resumo visual do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-3 shadow-sm"><BalanceLabel props={props} /><div className="mx-auto mt-1 flex h-36 w-36 items-center justify-center rounded-full p-2.5" role="img" aria-label={props.hidden ? 'Proporção oculta' : available === null ? 'Sem entradas para comparar' : `${available}% do dinheiro registrado no mês está livre`} style={{ background: `conic-gradient(#4F6DFF ${props.hidden || available === null ? 0 : available}%, #e8eff7 0)` }}><div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center"><strong data-month-balance className="max-w-[110px] truncate text-lg font-extrabold text-ink-900">{cash(props.view.balance, props.hidden)}</strong><span className="text-[11px] font-medium text-primary-700">{props.hidden || available === null ? 'Sem comparação' : `${available}% livre`}</span></div></div><p className="mt-1 text-center text-[11px] text-ink-600">{props.hidden ? 'Valores ocultos' : 'Disponível para suas escolhas'}</p><div className="mt-2"><Flow props={props} /></div></section>
+      <section aria-label="Resumo visual do dinheiro" className="rounded-2xl border border-ink-200/70 bg-white px-4 py-3 shadow-sm"><BalanceLabel props={props} /><div className="mx-auto mt-1 flex h-36 w-36 items-center justify-center rounded-full p-2.5" role="img" aria-label={props.hidden ? 'Proporção oculta' : available === null ? 'Sem entradas para comparar' : `${available}% do dinheiro registrado no mês está livre`} style={{ background: `conic-gradient(#426BFF ${props.hidden || available === null ? 0 : available}%, #e8eff7 0)` }}><div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-center"><strong data-month-balance className="max-w-[110px] truncate text-lg font-extrabold text-ink-900">{cash(props.view.balance, props.hidden)}</strong><span className="text-[11px] font-medium text-primary-700">{props.hidden || available === null ? 'Sem comparação' : `${available}% livre`}</span></div></div><p className="mt-1 text-center text-[11px] text-ink-600">{props.hidden ? 'Valores ocultos' : 'Disponível para suas escolhas'}</p><div className="mt-2"><Flow props={props} /></div></section>
       <StateMessage props={props} /><RecentExpense props={props} />
     </>}
     {props.variant === 3 && <>
